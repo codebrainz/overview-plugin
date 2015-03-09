@@ -68,6 +68,7 @@ enum
   PROP_OVERLAY_OUTLINE_COLOR,
   PROP_DOUBLE_BUFFERED,
   PROP_SCROLL_LINES,
+  PROP_SHOW_SCROLLBAR,
   N_PROPERTIES,
 };
 
@@ -86,6 +87,7 @@ struct OverviewScintilla_
   OverviewColor    overlay_outline_color; // the color of the outline of the overlay
   gboolean         double_buffered; // whether to enable double-buffering on internal scintilla canvas
   gint             scroll_lines;    // number of lines to scroll each scroll-event
+  gboolean         show_scrollbar;  // show the main scintilla's scrollbar
   gboolean         mouse_down;      // whether the mouse is down
   gboolean         connected_ce;    // if the configure-event is connected to src sci
   gulong           update_rect;     // signal id of idle rect handler
@@ -221,6 +223,15 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                       G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
   g_object_class_install_property (g_object_class, PROP_SCROLL_LINES, pspecs[PROP_SCROLL_LINES]);
+
+  pspecs[PROP_SHOW_SCROLLBAR] =
+    g_param_spec_boolean ("show-scrollbar",
+                          "ShowScrollbar",
+                          "Whether to show the scrollbar in the main Scintilla",
+                          TRUE,
+                          G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+  g_object_class_install_property (g_object_class, PROP_SHOW_SCROLLBAR, pspecs[PROP_SHOW_SCROLLBAR]);
 }
 
 static void
@@ -270,14 +281,21 @@ overview_scintilla_draw_real (OverviewScintilla *self,
                    alloc.height - (self->visible_rect.y + self->visible_rect.height));
   cairo_fill (cr);
 
-  // draw a highlighting border around visible rect
+  // draw a highlighting border at top and bottom of visible rect
   cairo_set_source_overlay_color_ (cr, &self->overlay_outline_color);
-  cairo_rectangle (cr,
-                   self->visible_rect.x + 0.5,
-                   self->visible_rect.y + 0.5,
-                   self->visible_rect.width,
-                   self->visible_rect.height);
+  cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5);
+  cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5);
+  cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5 + self->visible_rect.height);
+  cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5 + self->visible_rect.height);
   cairo_stroke (cr);
+
+  // draw a left border if there's no scrollbar
+  if (! overview_scintilla_get_show_scrollbar (self))
+    {
+      cairo_move_to (cr, 0.5, 0.5);
+      cairo_line_to (cr, 0.5, alloc.height);
+      cairo_stroke (cr);
+    }
 
   cairo_restore (cr);
 }
@@ -648,6 +666,7 @@ overview_scintilla_init (OverviewScintilla *self)
   self->show_tooltip    = TRUE;
   self->double_buffered = TRUE;
   self->scroll_lines    = OVERVIEW_SCINTILLA_SCROLL_LINES;
+  self->show_scrollbar  = TRUE;
 
   memset (&self->visible_rect, 0, sizeof (GdkRectangle));
   memcpy (&self->overlay_color, &def_overlay_color, sizeof (OverviewColor));
@@ -705,6 +724,9 @@ overview_scintilla_set_property (GObject      *object,
       break;
     case PROP_SCROLL_LINES:
       overview_scintilla_set_scroll_lines (self, g_value_get_int (value));
+      break;
+    case PROP_SHOW_SCROLLBAR:
+      overview_scintilla_set_show_scrollbar (self, g_value_get_boolean (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -764,6 +786,9 @@ overview_scintilla_get_property (GObject      *object,
     case PROP_SCROLL_LINES:
       g_value_set_int (value, overview_scintilla_get_scroll_lines (self));
       break;
+    case PROP_SHOW_SCROLLBAR:
+      g_value_set_boolean (value, overview_scintilla_get_show_scrollbar (self));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -774,6 +799,16 @@ GtkWidget *
 overview_scintilla_new (ScintillaObject *src_sci)
 {
   return g_object_new (OVERVIEW_TYPE_SCINTILLA, "scintilla", src_sci, NULL);
+}
+
+void
+overview_scintilla_queue_draw (OverviewScintilla *self)
+{
+  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
+  if (GTK_IS_WIDGET (self->canvas))
+    gtk_widget_queue_draw (self->canvas);
+  else
+    gtk_widget_queue_draw (GTK_WIDGET (self));
 }
 
 static gchar *
@@ -901,6 +936,8 @@ overview_scintilla_update_sci (OverviewScintilla *self)
                          TRUE,
                          G_CALLBACK (on_src_sci_notify),
                          self);
+
+  sci_send (src_sci, SETVSCROLLBAR, self->show_scrollbar, 0);
 }
 
 static void
@@ -1166,5 +1203,29 @@ overview_scintilla_set_scroll_lines (OverviewScintilla *self,
     {
       self->scroll_lines = lines;
       g_object_notify (G_OBJECT (self), "scroll-lines");
+    }
+}
+
+gboolean
+overview_scintilla_get_show_scrollbar (OverviewScintilla *self)
+{
+  g_return_val_if_fail (OVERVIEW_IS_SCINTILLA (self), FALSE);
+  return sci_send (self->sci, GETVSCROLLBAR, 0, 0);
+}
+
+void
+overview_scintilla_set_show_scrollbar (OverviewScintilla *self,
+                                       gboolean           show)
+{
+  gboolean old_value;
+
+  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
+
+  old_value = sci_send (self->sci, GETVSCROLLBAR, 0, 0);
+  if (show != old_value)
+    {
+      sci_send (self->sci, SETVSCROLLBAR, show, 0);
+      gtk_widget_queue_draw (GTK_WIDGET (self->sci));
+      g_object_notify (G_OBJECT (self), "show-scrollbar");
     }
 }

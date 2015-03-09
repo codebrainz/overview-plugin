@@ -25,6 +25,7 @@ static struct OverviewPrefs
   gboolean      show_tooltip;
   gboolean      double_buffered;
   gint          scroll_lines;
+  gboolean      show_scrollbar;
   gboolean      overlay_enabled;
   OverviewColor overlay_color;
   OverviewColor outline_color;
@@ -36,6 +37,7 @@ overview_prefs =
   .show_tooltip    = TRUE,
   .double_buffered = TRUE,
   .scroll_lines    = 1,
+  .show_scrollbar  = TRUE,
   .overlay_enabled = TRUE,
   .overlay_color   = { 0.0, 0.0, 0.0, 0.25 },
   .outline_color   = { 0.0, 0.0, 0.0, 0.75 },
@@ -49,11 +51,13 @@ apply_prefs (OverviewScintilla *overview)
                 "show-tooltip", overview_prefs.show_tooltip,
                 "double-buffered", overview_prefs.double_buffered,
                 "scroll-lines", overview_prefs.scroll_lines,
+                "show-scrollbar", overview_prefs.show_scrollbar,
                 "overlay-enabled", overview_prefs.overlay_enabled,
                 "overlay-color", &overview_prefs.overlay_color,
                 "overlay-outline-color", &overview_prefs.outline_color,
                 NULL);
   gtk_widget_set_size_request (GTK_WIDGET (overview), overview_prefs.width, -1);
+  overview_scintilla_queue_draw (overview);
 }
 
 static inline GtkWidget *
@@ -159,6 +163,7 @@ static const gchar *def_config =
   "show-tooltip = true\n"
   "double-buffered = true\n"
   "scroll-lines = 1\n"
+  "show-scrollbar = true\n"
   "overlay-enabled = true\n"
   "overlay-color = #000\n"
   "overlay-color-alpha = 0.25\n"
@@ -243,6 +248,7 @@ load_prefs (void)
   overview_prefs.show_tooltip = g_key_file_get_boolean (kf, "overview", "show-tooltip", NULL);
   overview_prefs.double_buffered = g_key_file_get_boolean (kf, "overview", "double-buffered", NULL);
   overview_prefs.scroll_lines = g_key_file_get_integer (kf, "overview", "scroll-lines", NULL);
+  overview_prefs.show_scrollbar = g_key_file_get_boolean (kf, "overview", "show-scrollbar", NULL);
   overview_prefs.overlay_enabled = g_key_file_get_boolean (kf, "overview", "overlay-enabled", NULL);
 
   color = g_key_file_get_string (kf, "overview", "overlay-color", NULL);
@@ -281,6 +287,8 @@ load_prefs (void)
            "\t  Zoom: %d\n"
            "\t  Show Tooltip: %d\n"
            "\t  Double Buffered: %d\n"
+           "\t  Scroll Lines: %d\n"
+           "\t  Show Scrollbar: %d\n"
            "\t  Overlay Enabled: %d\n"
            "\t  Overlay Color: %g, %g, %g, %g\n"
            "\t  Outline Color: %g, %g, %g, %g\n",
@@ -288,6 +296,8 @@ load_prefs (void)
            overview_prefs.zoom,
            overview_prefs.show_tooltip,
            overview_prefs.double_buffered,
+           overview_prefs.scroll_lines,
+           overview_prefs.show_scrollbar,
            overview_prefs.overlay_enabled,
            overview_prefs.overlay_color.red,
            overview_prefs.overlay_color.green,
@@ -395,6 +405,9 @@ setup_prefs_table (void)
   wid = get_widget ("overview-scroll-lines-spin");
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (wid), overview_prefs.scroll_lines);
 
+  wid = get_widget ("overview-show-scrollbar-yes-check");
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), overview_prefs.show_scrollbar);
+
   wid = get_widget ("overview-overlay-color");
   color.red = (guint16)(overview_prefs.overlay_color.red * G_MAXUINT16);
   color.green = (guint16)(overview_prefs.overlay_color.green * G_MAXUINT16);
@@ -493,6 +506,7 @@ save_prefs (void)
   g_key_file_set_boolean (kf, "overview", "show-tooltip", overview_prefs.show_tooltip);
   g_key_file_set_boolean (kf, "overview", "double-buffered", overview_prefs.double_buffered);
   g_key_file_set_integer (kf, "overview", "scroll-lines", overview_prefs.scroll_lines);
+  g_key_file_set_boolean (kf, "overview", "show-scrollbar", overview_prefs.show_scrollbar);
   g_key_file_set_boolean (kf, "overview", "overlay-enabled", overview_prefs.overlay_enabled);
   g_key_file_set_double (kf, "overview", "overlay-color-alpha", overview_prefs.overlay_color.alpha);
   g_key_file_set_double (kf, "overview", "overlay-outline-color-alpha", overview_prefs.outline_color.alpha);
@@ -567,6 +581,9 @@ on_prefs_response (GtkDialog *dialog,
 
   wid = get_widget ("overview-scroll-lines-spin");
   overview_prefs.scroll_lines = gtk_spin_button_get_value (GTK_SPIN_BUTTON (wid));
+
+  wid = get_widget ("overview-show-scrollbar-yes-check");
+  overview_prefs.show_scrollbar = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid));
 
   wid = get_widget ("overview-overlay-enabled-yes-check");
   overview_prefs.overlay_enabled = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid));

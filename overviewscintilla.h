@@ -29,6 +29,7 @@ GType overview_color_get_type (void);
 
 GType         overview_scintilla_get_type                  (void);
 GtkWidget    *overview_scintilla_new                       (ScintillaObject     *src_sci);
+void          overview_scintilla_queue_draw                (OverviewScintilla   *sci);
 GdkCursorType overview_scintilla_get_cursor                (OverviewScintilla   *sci);
 void          overview_scintilla_set_cursor                (OverviewScintilla   *sci,
                                                             GdkCursorType        cursor_type);
@@ -59,6 +60,9 @@ void          overview_scintilla_set_double_buffered       (OverviewScintilla   
 gint         overview_scintilla_get_scroll_lines           (OverviewScintilla   *sci);
 void         overview_scintilla_set_scroll_lines           (OverviewScintilla   *sci,
                                                             gint                 lines);
+gboolean     overview_scintilla_get_show_scrollbar         (OverviewScintilla   *sci);
+void         overview_scintilla_set_show_scrollbar         (OverviewScintilla   *sci,
+                                                            gboolean             show);
 
 G_END_DECLS
 
