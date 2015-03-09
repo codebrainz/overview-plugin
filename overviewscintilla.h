@@ -1,7 +1,7 @@
 #ifndef OVERVIEWSCINTILLA_H_
 #define OVERVIEWSCINTILLA_H_ 1
 
-#include <geanyplugin.h>
+#include "overviewplugin.h"
 
 G_BEGIN_DECLS
 
@@ -15,8 +15,50 @@ G_BEGIN_DECLS
 typedef struct OverviewScintilla_        OverviewScintilla;
 typedef struct OverviewScintillaClass_   OverviewScintillaClass;
 
-GType      overview_scintilla_get_type (void);
-GtkWidget *overview_scintilla_new      (ScintillaObject *src_sci);
+typedef struct
+{
+  gdouble red;
+  gdouble green;
+  gdouble blue;
+  gdouble alpha;
+}
+OverviewColor;
+
+GType overview_color_get_type (void);
+#define OVERVIEW_TYPE_COLOR (overview_color_get_type ())
+
+GType         overview_scintilla_get_type                  (void);
+GtkWidget    *overview_scintilla_new                       (ScintillaObject     *src_sci);
+GdkCursorType overview_scintilla_get_cursor                (OverviewScintilla   *sci);
+void          overview_scintilla_set_cursor                (OverviewScintilla   *sci,
+                                                            GdkCursorType        cursor_type);
+void          overview_scintilla_get_visible_rect          (OverviewScintilla   *sci,
+                                                            GdkRectangle        *rect);
+void          overview_scintilla_set_visible_rect          (OverviewScintilla   *sci,
+                                                            const GdkRectangle  *rect);
+gint          overview_scintilla_get_zoom                  (OverviewScintilla   *sci);
+void          overview_scintilla_set_zoom                  (OverviewScintilla   *sci,
+                                                            gint                 zoom);
+gboolean      overview_scintilla_get_show_tooltip          (OverviewScintilla   *sci);
+void          overview_scintilla_set_show_tooltip          (OverviewScintilla   *sci,
+                                                            gboolean             show);
+gboolean      overview_scintilla_get_overlay_enabled       (OverviewScintilla   *sci);
+void          overview_scintilla_set_overlay_enabled       (OverviewScintilla   *sci,
+                                                            gboolean             enabled);
+void          overview_scintilla_get_overlay_color         (OverviewScintilla   *sci,
+                                                            OverviewColor       *color);
+void          overview_scintilla_set_overlay_color         (OverviewScintilla   *sci,
+                                                            const OverviewColor *color);
+void          overview_scintilla_get_overlay_outline_color (OverviewScintilla   *sci,
+                                                            OverviewColor       *color);
+void          overview_scintilla_set_overlay_outline_color (OverviewScintilla   *sci,
+                                                            const OverviewColor *color);
+gboolean      overview_scintilla_get_double_buffered       (OverviewScintilla   *sci);
+void          overview_scintilla_set_double_buffered       (OverviewScintilla   *sci,
+                                                            gboolean             enabled);
+gint         overview_scintilla_get_scroll_lines           (OverviewScintilla   *sci);
+void         overview_scintilla_set_scroll_lines           (OverviewScintilla   *sci,
+                                                            gint                 lines);
 
 G_END_DECLS
 

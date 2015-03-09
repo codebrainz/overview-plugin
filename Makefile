@@ -10,6 +10,7 @@ clean:
 
 install:
 	cp overview.so ~/.config/geany/plugins/
+	cp prefs.glade ~/.config/geany/plugins/overview/
 
 overview.so: $(objects)
 	$(CC) -shared $(cflags) -o $@ $(objects) $(ldflags)
