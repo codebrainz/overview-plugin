@@ -79,8 +79,9 @@ struct OverviewScintilla_
   gint             scroll_lines;    // number of lines to scroll each scroll-event
   gboolean         show_scrollbar;  // show the main scintilla's scrollbar
   gboolean         mouse_down;      // whether the mouse is down
-  gboolean         connected_ce;    // if the configure-event is connected to src sci
   gulong           update_rect;     // signal id of idle rect handler
+  gulong           conf_event;      // signal id of the configure event on scintilla internal drawing area
+  GtkWidget       *src_canvas;      // internal drawing area of main scintilla
 };
 
 struct OverviewScintillaClass_
@@ -228,6 +229,9 @@ overview_scintilla_finalize (GObject *object)
   g_return_if_fail (OVERVIEW_IS_SCINTILLA (object));
 
   self = OVERVIEW_SCINTILLA (object);
+
+  if (GTK_IS_WIDGET (self->src_canvas) && self->conf_event != 0)
+    g_signal_handler_disconnect (self->src_canvas, self->conf_event);
 
   g_object_unref (self->sci);
 
@@ -659,8 +663,9 @@ overview_scintilla_init (OverviewScintilla *self)
   self->canvas          = NULL;
   self->cursor          = OVERVIEW_SCINTILLA_CURSOR;
   self->active_cursor   = OVERVIEW_SCINTILLA_CURSOR;
-  self->connected_ce    = FALSE;
   self->update_rect     = 0;
+  self->conf_event      = 0;
+  self->src_canvas      = NULL;
   self->width           = OVERVIEW_SCINTILLA_WIDTH_DEF;
   self->zoom            = OVERVIEW_SCINTILLA_ZOOM_DEF;
   self->mouse_down      = FALSE;
@@ -876,20 +881,18 @@ on_src_sci_map_event (ScintillaObject   *sci,
                       GdkEvent          *event,
                       OverviewScintilla *self)
 {
-  if (!self->connected_ce)
+  if (self->conf_event == 0)
     {
-      GtkWidget *da;
-      da = overview_scintilla_find_drawing_area (GTK_WIDGET (sci));
-      if (GTK_IS_WIDGET (da))
+      GtkWidget *internal;
+      internal = overview_scintilla_find_drawing_area (GTK_WIDGET (sci));
+      if (GTK_IS_DRAWING_AREA (internal))
         {
-          plugin_signal_connect (geany_plugin,
-                                 G_OBJECT (da),
-                                 "configure-event",
-                                 TRUE,
-                                 G_CALLBACK (on_src_sci_configure_event),
-                                 self);
+          self->src_canvas = internal;
+          self->conf_event = g_signal_connect (self->src_canvas,
+                                               "configure-event",
+                                               G_CALLBACK (on_src_sci_configure_event),
+                                               self);
         }
-      self->connected_ce = TRUE;
     }
   return FALSE;
 }
@@ -938,7 +941,6 @@ overview_scintilla_update_sci (OverviewScintilla *self)
 
   overview_scintilla_update_cursor (self);
 
-  self->connected_ce = FALSE;
   gtk_widget_add_events (GTK_WIDGET (src_sci), GDK_STRUCTURE_MASK);
   plugin_signal_connect (geany_plugin,
                          G_OBJECT (src_sci),
