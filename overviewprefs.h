@@ -70,6 +70,7 @@ void           overview_prefs_bind_scintilla (OverviewPrefs *prefs,
     "overlay-outline-alpha = 0.10\n"    \
     "overlay-inverted = true\n"         \
     "position = right\n"                \
+    "visible = true\n"                  \
     "\n"
 
 G_END_DECLS

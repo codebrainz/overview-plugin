@@ -39,9 +39,10 @@ PLUGIN_SET_INFO (
   "Matthew Brush <matt@geany.org>")
 
 static OverviewPrefs   *overview_prefs     = NULL;
-static gboolean         overview_visible   = TRUE;
 static GtkWidget       *overview_menu_sep  = NULL;
 static GtkWidget       *overview_menu_item = NULL;
+
+static void write_config (void);
 
 static GtkWidget *
 hijack_scintilla (GeanyDocument  *doc,
@@ -72,7 +73,6 @@ hijack_scintilla (GeanyDocument  *doc,
   g_object_set_data (G_OBJECT (sci), "overview", overview);
 
   gtk_widget_show_all (cont);
-  gtk_widget_set_visible (overview, overview_visible);
 
   return overview;
 }
@@ -217,8 +217,7 @@ swap_scintillas (GtkPositionType pos)
           gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
         }
 
-      gtk_widget_show_all (GTK_WIDGET (parent));
-      gtk_widget_set_visible (GTK_WIDGET (overview), overview_visible);
+      gtk_widget_show_all (parent);
 
       g_object_unref (sci);
       g_object_unref (overview);
@@ -230,20 +229,6 @@ swap_scintillas (GtkPositionType pos)
 }
 
 static void
-toggle_overviews_visiblity (void)
-{
-  guint i;
-  overview_visible = ! overview_visible;
-  foreach_document (i)
-    {
-      GeanyDocument *doc = documents[i];
-      GtkWidget     *overview;
-      overview = g_object_get_data (G_OBJECT (doc->editor->sci), "overview");
-      gtk_widget_set_visible (overview, overview_visible);
-    }
-}
-
-static void
 on_position_pref_notify (OverviewPrefs *prefs,
                          GParamSpec    *pspec,
                          gpointer       user_data)
@@ -251,6 +236,22 @@ on_position_pref_notify (OverviewPrefs *prefs,
   GtkPositionType pos = GTK_POS_RIGHT;
   g_object_get (prefs, "position", &pos, NULL);
   swap_scintillas (pos);
+}
+
+static void
+on_visible_pref_notify (OverviewPrefs *prefs,
+                        GParamSpec    *pspec,
+                        gpointer       user_data)
+{
+  write_config ();
+}
+
+static void
+toggle_visibility (void)
+{
+  gboolean visible = TRUE;
+  g_object_get (overview_prefs, "visible", &visible, NULL);
+  g_object_set (overview_prefs, "visible", !visible, NULL);
 }
 
 enum
@@ -267,10 +268,8 @@ on_kb_activate (guint keybinding_id)
   switch (keybinding_id)
     {
     case KB_TOGGLE_VISIBLE:
-      {
-        toggle_overviews_visiblity ();
-        break;
-      }
+      toggle_visibility ();
+      break;
     case KB_TOGGLE_POSITION:
       {
         GtkPositionType pos;
@@ -306,13 +305,6 @@ get_menu_item_pos (GtkWidget *menu,
     }
   g_list_free (children);
   return pos + 1;
-}
-
-static void
-on_menu_item_clicked (GtkMenuItem *item,
-                      gpointer     user_data)
-{
-  toggle_overviews_visiblity ();
 }
 
 static GtkWidget *
@@ -352,7 +344,6 @@ add_menu_item (void)
     }
 
   gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (overview_menu_item), TRUE);
-  g_signal_connect (overview_menu_item, "toggled", G_CALLBACK (on_menu_item_clicked), NULL);
   gtk_widget_show (overview_menu_item);
 
   return overview_menu_item;
@@ -366,6 +357,7 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   GeanyKeyGroup  *key_group;
   GtkPositionType pos = GTK_POS_RIGHT;
   GtkWidget      *menu_item;
+  gboolean        visible = TRUE;
 
   plugin_module_make_resident (geany_plugin);
   menu_item = add_menu_item ();
@@ -408,6 +400,10 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   g_object_get (G_OBJECT (overview_prefs), "position", &pos, NULL);
   hijack_all_scintillas (pos);
   g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
+  g_signal_connect (overview_prefs, "notify::visible", G_CALLBACK (on_visible_pref_notify), NULL);
+  g_object_get (overview_prefs, "visible", &visible, NULL);
+  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), visible);
+  g_object_bind_property (menu_item, "active", overview_prefs, "visible", G_BINDING_DEFAULT);
 
   plugin_signal_connect (geany_plugin, NULL, "document-new", TRUE, G_CALLBACK (on_document_open_new), NULL);
   plugin_signal_connect (geany_plugin, NULL, "document-open", TRUE, G_CALLBACK (on_document_open_new), NULL);
@@ -415,9 +411,24 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   plugin_signal_connect (geany_plugin, NULL, "document-reload", TRUE, G_CALLBACK (on_document_reload), NULL);
 }
 
+static void
+write_config (void)
+{
+  gchar  *conf_file;
+  GError *error = NULL;
+  conf_file = get_config_file ();
+  if (! overview_prefs_save (overview_prefs, conf_file, &error))
+    {
+      g_critical ("failed to save preferences to file '%s': %s", conf_file, error->message);
+      g_error_free (error);
+    }
+  g_free (conf_file);
+}
+
 void
 plugin_cleanup (void)
 {
+  write_config ();
   restore_all_scintillas ();
 
   if (GTK_IS_WIDGET (overview_menu_sep))
@@ -436,15 +447,7 @@ on_prefs_stored (OverviewPrefsPanel *panel,
                  OverviewPrefs      *prefs,
                  gpointer            user_data)
 {
-  gchar  *conf_file;
-  GError *error = NULL;
-  conf_file = get_config_file ();
-  if (! overview_prefs_save (overview_prefs, conf_file, &error))
-    {
-      g_critical ("failed to save preferences to file '%s': %s", conf_file, error->message);
-      g_error_free (error);
-    }
-  g_free (conf_file);
+  write_config ();
 }
 
 GtkWidget *
