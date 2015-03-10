@@ -26,6 +26,16 @@ give a quick explanation of each preference.
 
 ![Overview plugin's preferences GUI](screenshot-prefs.png?raw=true)
 
+This screenshot shows the available keybindings which can be configured
+through Geany's Preferences dialog from the `Edit->Preferences` menu item.
+
+![Keybindings preferences](screenshot-keybindings.png?raw=true)
+
+This screenshot shows how the Overview can be shown/hidden by using Geany's
+`View` menu.
+
+![Showing and Hiding from the main menu](screenshot-view-menu.png?raw=true)
+
 Installing
 ----------
 
