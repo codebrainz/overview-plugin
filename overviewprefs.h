@@ -69,7 +69,6 @@ void           overview_prefs_bind_scintilla (OverviewPrefs *prefs,
     "overlay-outline-color = #000000\n" \
     "overlay-outline-alpha = 0.10\n"    \
     "overlay-inverted = true\n"         \
-    "position = right\n"                \
     "\n"
 
 G_END_DECLS

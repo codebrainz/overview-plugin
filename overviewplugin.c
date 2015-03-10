@@ -38,7 +38,8 @@ PLUGIN_SET_INFO (
   "0.01",
   "Matthew Brush <matt@geany.org>")
 
-static OverviewPrefs *overview_prefs = NULL;
+static OverviewPrefs   *overview_prefs    = NULL;
+static GtkPositionType  overview_position = GTK_POS_RIGHT;
 
 static GtkWidget *
 hijack_scintilla (GeanyDocument *doc)
@@ -52,8 +53,16 @@ hijack_scintilla (GeanyDocument *doc)
   overview_prefs_bind_scintilla (overview_prefs, G_OBJECT (overview));
 
   gtk_container_remove (GTK_CONTAINER (parent), sci);
-  gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
-  gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
+  if (overview_position == GTK_POS_LEFT)
+    {
+      gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
+      gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
+    }
+  else
+    {
+      gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
+      gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
+    }
   gtk_container_add (GTK_CONTAINER (parent), cont);
 
   g_object_set_data (G_OBJECT (sci), "overview", overview);
@@ -74,15 +83,15 @@ hijack_all_scintillas (void)
 static void
 restore_scintilla (GeanyDocument *doc)
 {
-  GtkWidget *sci    = g_object_ref (doc->editor->sci);
+  GtkWidget *sci    = GTK_WIDGET (doc->editor->sci);
   GtkWidget *cont   = gtk_widget_get_parent (sci);
   GtkWidget *parent = gtk_widget_get_parent (cont);
 
-  gtk_container_remove (GTK_CONTAINER (cont), sci);
-  gtk_container_remove (GTK_CONTAINER (parent), cont);
-
-  if (IS_SCINTILLA (sci))
+  if (GTK_IS_WIDGET (sci))
     {
+      g_object_ref (sci);
+      gtk_container_remove (GTK_CONTAINER (cont), sci);
+      gtk_container_remove (GTK_CONTAINER (parent), cont);
       gtk_container_add (GTK_CONTAINER (parent), sci);
       g_object_unref (sci);
     }
@@ -165,6 +174,50 @@ get_config_file (void)
   return fn;
 }
 
+static void
+swap_scintillas (void)
+{
+  for (guint i = 0; i < documents_array->len; i++)
+    {
+      GeanyDocument     *doc = documents_array->pdata[i];
+      if (! DOC_VALID (doc))
+        continue;
+      ScintillaObject   *sci;
+      OverviewScintilla *overview;
+      GtkWidget         *parent;
+
+      sci      = g_object_ref (doc->editor->sci);
+      overview = g_object_ref (g_object_get_data (G_OBJECT (sci), "overview"));
+      parent   = gtk_widget_get_parent (GTK_WIDGET (sci));
+
+      gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (sci));
+      gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (overview));
+
+      if (overview_position == GTK_POS_LEFT)
+        {
+          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
+          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (sci), TRUE, TRUE, 0);
+        }
+      else
+        {
+          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (sci), TRUE, TRUE, 0);
+          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
+        }
+
+      g_object_unref (sci);
+      g_object_unref (overview);
+    }
+}
+
+static void
+on_position_pref_notify (OverviewPrefs *prefs,
+                         GParamSpec    *pspec,
+                         gpointer       user_data)
+{
+  //g_object_get (prefs, "position", &overview_position, NULL);
+  //swap_scintillas ();
+}
+
 void
 plugin_init (G_GNUC_UNUSED GeanyData *data)
 {
@@ -174,6 +227,7 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   plugin_module_make_resident (geany_plugin);
 
   overview_prefs = overview_prefs_new ();
+  g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
   conf_file = get_config_file ();
   if (! overview_prefs_load (overview_prefs, conf_file, &error))
     {

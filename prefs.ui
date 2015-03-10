@@ -541,8 +541,8 @@
     </child>
     <child>
       <object class="GtkLabel" id="overview-position-label">
-        <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="no_show_all">True</property>
         <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
         <property name="xalign">0</property>
         <property name="label" translatable="yes">Position:</property>
@@ -556,15 +556,15 @@
     </child>
     <child>
       <object class="GtkHBox" id="overview-position-hbox">
-        <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="no_show_all">True</property>
         <property name="spacing">6</property>
         <child>
           <object class="GtkRadioButton" id="overview-position-left-check">
             <property name="label" translatable="yes">Left</property>
-            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
+            <property name="no_show_all">True</property>
             <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
             <property name="draw_indicator">True</property>
           </object>
@@ -577,9 +577,9 @@
         <child>
           <object class="GtkRadioButton" id="overview-position-right-check">
             <property name="label" translatable="yes">Right</property>
-            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
+            <property name="no_show_all">True</property>
             <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
             <property name="active">True</property>
             <property name="draw_indicator">True</property>

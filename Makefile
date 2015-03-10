@@ -32,4 +32,8 @@ overview.so: $(objects)
 .c.o:
 	$(CC) -c $(cflags) -o $@ $<
 
+-include Makefile.deps
+Makefile.deps: $(sources)
+	$(CC) -MM $(cflags) $(sources) > $@
+
 .PHONY: all clean
