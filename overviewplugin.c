@@ -188,6 +188,19 @@ swap_scintillas (GtkPositionType pos)
   gint         orig_page;
   GtkNotebook *nb = GTK_NOTEBOOK (geany_data->main_widgets->notebook);
 
+  // DELETE ME: special check to disable swapping if the needed patch isn't applied to Geany
+  {
+    GeanyDocument *doc = document_get_current ();
+    if (DOC_VALID (doc) &&
+        (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") != doc))
+      {
+        g_critical ("Refusing to swap Overview into left position because "
+                    "your Geany version isn't new enough to support this "
+                    "without crashing hard.");
+        pos = GTK_POS_RIGHT;
+      }
+  }
+
   orig_page = gtk_notebook_get_current_page (nb);
 
   foreach_document (i)
