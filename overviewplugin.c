@@ -39,10 +39,11 @@ PLUGIN_SET_INFO (
   "Matthew Brush <matt@geany.org>")
 
 static OverviewPrefs   *overview_prefs    = NULL;
-static GtkPositionType  overview_position = GTK_POS_RIGHT;
+static gboolean         overview_visible  = TRUE;
 
 static GtkWidget *
-hijack_scintilla (GeanyDocument *doc)
+hijack_scintilla (GeanyDocument  *doc,
+                  GtkPositionType pos)
 {
   GtkWidget *sci    = GTK_WIDGET (doc->editor->sci);
   GtkWidget *parent = gtk_widget_get_parent (sci);
@@ -51,9 +52,10 @@ hijack_scintilla (GeanyDocument *doc)
 
   overview = overview_scintilla_new (SCINTILLA (sci));
   overview_prefs_bind_scintilla (overview_prefs, G_OBJECT (overview));
+  gtk_widget_set_no_show_all (overview, TRUE);
 
   gtk_container_remove (GTK_CONTAINER (parent), sci);
-  if (overview_position == GTK_POS_LEFT)
+  if (pos == GTK_POS_LEFT)
     {
       gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
       gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
@@ -68,16 +70,17 @@ hijack_scintilla (GeanyDocument *doc)
   g_object_set_data (G_OBJECT (sci), "overview", overview);
 
   gtk_widget_show_all (cont);
+  gtk_widget_set_visible (overview, overview_visible);
 
   return overview;
 }
 
 static void
-hijack_all_scintillas (void)
+hijack_all_scintillas (GtkPositionType pos)
 {
   guint i = 0;
   foreach_document (i)
-    hijack_scintilla (documents[i]);
+    hijack_scintilla (documents[i], pos);
 }
 
 static void
@@ -110,7 +113,9 @@ on_document_open_new (G_GNUC_UNUSED GObject *unused,
                       GeanyDocument         *doc,
                       G_GNUC_UNUSED gpointer user_data)
 {
-  hijack_scintilla (doc);
+  GtkPositionType pos = GTK_POS_RIGHT;
+  g_object_get (overview_prefs, "position", &pos, NULL);
+  hijack_scintilla (doc, pos);
 }
 
 static void
@@ -175,25 +180,31 @@ get_config_file (void)
 }
 
 static void
-swap_scintillas (void)
+swap_scintillas (GtkPositionType pos)
 {
-  for (guint i = 0; i < documents_array->len; i++)
+  guint        i;
+  gint         orig_page;
+  GtkNotebook *nb = GTK_NOTEBOOK (geany_data->main_widgets->notebook);
+
+  orig_page = gtk_notebook_get_current_page (nb);
+
+  foreach_document (i)
     {
-      GeanyDocument     *doc = documents_array->pdata[i];
-      if (! DOC_VALID (doc))
-        continue;
+      GeanyDocument     *doc = documents[i];
       ScintillaObject   *sci;
       OverviewScintilla *overview;
       GtkWidget         *parent;
+      gint               this_page;
 
-      sci      = g_object_ref (doc->editor->sci);
-      overview = g_object_ref (g_object_get_data (G_OBJECT (sci), "overview"));
-      parent   = gtk_widget_get_parent (GTK_WIDGET (sci));
+      sci       = g_object_ref (doc->editor->sci);
+      overview  = g_object_ref (g_object_get_data (G_OBJECT (sci), "overview"));
+      parent    = gtk_widget_get_parent (GTK_WIDGET (sci));
+      this_page = document_get_notebook_page (doc);
 
       gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (sci));
       gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (overview));
 
-      if (overview_position == GTK_POS_LEFT)
+      if (pos == GTK_POS_LEFT)
         {
           gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
           gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (sci), TRUE, TRUE, 0);
@@ -204,8 +215,29 @@ swap_scintillas (void)
           gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
         }
 
+      gtk_widget_show_all (GTK_WIDGET (parent));
+      gtk_widget_set_visible (GTK_WIDGET (overview), overview_visible);
+
       g_object_unref (sci);
       g_object_unref (overview);
+
+      gtk_notebook_set_current_page (nb, this_page);
+    }
+
+  gtk_notebook_set_current_page (nb, orig_page);
+}
+
+static void
+toggle_overviews_visiblity (void)
+{
+  guint i;
+  overview_visible = ! overview_visible;
+  foreach_document (i)
+    {
+      GeanyDocument *doc = documents[i];
+      GtkWidget     *overview;
+      overview = g_object_get_data (G_OBJECT (doc->editor->sci), "overview");
+      gtk_widget_set_visible (overview, overview_visible);
     }
 }
 
@@ -214,17 +246,85 @@ on_position_pref_notify (OverviewPrefs *prefs,
                          GParamSpec    *pspec,
                          gpointer       user_data)
 {
-  g_object_get (prefs, "position", &overview_position, NULL);
-  swap_scintillas ();
+  GtkPositionType pos = GTK_POS_RIGHT;
+  g_object_get (prefs, "position", &pos, NULL);
+  swap_scintillas (pos);
+}
+
+enum
+{
+  KB_TOGGLE_VISIBLE,
+  KB_TOGGLE_POSITION,
+  KB_TOGGLE_INVERTED,
+  NUM_KB
+};
+
+static gboolean
+on_kb_activate (guint keybinding_id)
+{
+  switch (keybinding_id)
+    {
+    case KB_TOGGLE_VISIBLE:
+      {
+        toggle_overviews_visiblity ();
+        break;
+      }
+    case KB_TOGGLE_POSITION:
+      {
+        GtkPositionType pos;
+        g_object_get (overview_prefs, "position", &pos, NULL);
+        pos = (pos == GTK_POS_LEFT) ? GTK_POS_RIGHT : GTK_POS_LEFT;
+        g_object_set (overview_prefs, "position", pos, NULL);
+        break;
+      }
+    case KB_TOGGLE_INVERTED:
+      {
+        gboolean inv = FALSE;
+        g_object_get (overview_prefs, "overlay-inverted", &inv, NULL);
+        g_object_set (overview_prefs, "overlay-inverted", !inv, NULL);
+        break;
+      }
+    default:
+      break;
+    }
+  return TRUE;
 }
 
 void
 plugin_init (G_GNUC_UNUSED GeanyData *data)
 {
-  gchar  *conf_file;
-  GError *error = NULL;
+  gchar          *conf_file;
+  GError         *error = NULL;
+  GeanyKeyGroup  *key_group;
+  GtkPositionType pos = GTK_POS_RIGHT;
 
   plugin_module_make_resident (geany_plugin);
+
+  key_group = plugin_set_key_group (geany_plugin,
+                                    "overview",
+                                    NUM_KB,
+                                    on_kb_activate);
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_VISIBLE,
+                        NULL, 0, 0,
+                        "toggle-visibility",
+                        "Toggle Visibility",
+                        NULL);
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_POSITION,
+                        NULL, 0, 0,
+                        "toggle-position",
+                        "Toggle Left/Right Position",
+                        NULL);
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_INVERTED,
+                        NULL, 0, 0,
+                        "toggle-inverted",
+                        "Toggle Overlay Inversion",
+                        NULL);
 
   overview_prefs = overview_prefs_new ();
   conf_file = get_config_file ();
@@ -235,9 +335,9 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
     }
   g_free (conf_file);
 
+  g_object_get (G_OBJECT (overview_prefs), "position", &pos, NULL);
+  hijack_all_scintillas (pos);
   g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
-  g_object_get (overview_prefs, "position", &overview_position, NULL);
-  hijack_all_scintillas ();
 
   plugin_signal_connect (geany_plugin, NULL, "document-new", TRUE, G_CALLBACK (on_document_open_new), NULL);
   plugin_signal_connect (geany_plugin, NULL, "document-open", TRUE, G_CALLBACK (on_document_open_new), NULL);
