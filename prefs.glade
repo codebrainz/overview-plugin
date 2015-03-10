@@ -426,7 +426,6 @@
             <property name="receives_default">False</property>
             <property name="tooltip_text" translatable="yes">Whether to show the usual editor scrollbar when the overview is active. Since the sidebar behaves like a scrollbar, you might want to set this to No.</property>
             <property name="draw_indicator">True</property>
-            <property name="group">overview-show-scrollbar-no-check</property>
           </object>
           <packing>
             <property name="expand">False</property>

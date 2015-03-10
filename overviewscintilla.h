@@ -2,6 +2,7 @@
 #define OVERVIEWSCINTILLA_H_ 1
 
 #include "overviewplugin.h"
+#include "overviewcolor.h"
 
 G_BEGIN_DECLS
 
@@ -15,18 +16,6 @@ G_BEGIN_DECLS
 typedef struct OverviewScintilla_        OverviewScintilla;
 typedef struct OverviewScintillaClass_   OverviewScintillaClass;
 
-typedef struct
-{
-  gdouble red;
-  gdouble green;
-  gdouble blue;
-  gdouble alpha;
-}
-OverviewColor;
-
-GType overview_color_get_type (void);
-#define OVERVIEW_TYPE_COLOR (overview_color_get_type ())
-
 GType         overview_scintilla_get_type                  (void);
 GtkWidget    *overview_scintilla_new                       (ScintillaObject     *src_sci);
 void          overview_scintilla_queue_draw                (OverviewScintilla   *sci);
@@ -37,6 +26,9 @@ void          overview_scintilla_get_visible_rect          (OverviewScintilla   
                                                             GdkRectangle        *rect);
 void          overview_scintilla_set_visible_rect          (OverviewScintilla   *sci,
                                                             const GdkRectangle  *rect);
+guint         overview_scintilla_get_width                 (OverviewScintilla   *sci);
+void          overview_scintilla_set_width                 (OverviewScintilla   *sci,
+                                                            guint                width);
 gint          overview_scintilla_get_zoom                  (OverviewScintilla   *sci);
 void          overview_scintilla_set_zoom                  (OverviewScintilla   *sci,
                                                             gint                 zoom);
@@ -57,11 +49,11 @@ void          overview_scintilla_set_overlay_outline_color (OverviewScintilla   
 gboolean      overview_scintilla_get_double_buffered       (OverviewScintilla   *sci);
 void          overview_scintilla_set_double_buffered       (OverviewScintilla   *sci,
                                                             gboolean             enabled);
-gint         overview_scintilla_get_scroll_lines           (OverviewScintilla   *sci);
-void         overview_scintilla_set_scroll_lines           (OverviewScintilla   *sci,
+gint          overview_scintilla_get_scroll_lines          (OverviewScintilla   *sci);
+void          overview_scintilla_set_scroll_lines          (OverviewScintilla   *sci,
                                                             gint                 lines);
-gboolean     overview_scintilla_get_show_scrollbar         (OverviewScintilla   *sci);
-void         overview_scintilla_set_show_scrollbar         (OverviewScintilla   *sci,
+gboolean      overview_scintilla_get_show_scrollbar        (OverviewScintilla   *sci);
+void          overview_scintilla_set_show_scrollbar        (OverviewScintilla   *sci,
                                                             gboolean             show);
 
 G_END_DECLS

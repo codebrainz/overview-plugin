@@ -1,6 +1,12 @@
-sources = overviewplugin.c overviewscintilla.c
+sources = \
+	overviewplugin.c \
+	overviewscintilla.c \
+	overviewcolor.c \
+	overviewprefs.c
+
 objects = $(sources:.c=.o)
-cflags = $(CFLAGS) -g -fPIC -std=c99 $(shell pkg-config --cflags geany)
+cflags = $(CFLAGS) -g -fPIC -std=c99 $(shell pkg-config --cflags geany) \
+	-DOVERVIEW_PREFS_UI_FILE=\""~/.config/geany/plugins/overview/prefs.glade"\"
 ldflags = $(LDFLAGS) $(shell pkg-config --libs geany)
 
 all: overview.so

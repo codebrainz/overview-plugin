@@ -2,12 +2,15 @@
 #include "overviewplugin.h"
 #include <string.h>
 
-#define OVERVIEW_SCINTILLA_CURSOR        GDK_CROSSHAIR
-#define OVERVIEW_SCINTILLA_CURSOR_CLICK  GDK_CROSSHAIR
+#define OVERVIEW_SCINTILLA_CURSOR        GDK_ARROW
+#define OVERVIEW_SCINTILLA_CURSOR_CLICK  GDK_ARROW
 #define OVERVIEW_SCINTILLA_CURSOR_SCROLL GDK_SB_V_DOUBLE_ARROW
 #define OVERVIEW_SCINTILLA_ZOOM_MIN      -100
 #define OVERVIEW_SCINTILLA_ZOOM_MAX      100
 #define OVERVIEW_SCINTILLA_ZOOM_DEF      -20
+#define OVERVIEW_SCINTILLA_WIDTH_MIN     16
+#define OVERVIEW_SCINTILLA_WIDTH_MAX     512
+#define OVERVIEW_SCINTILLA_WIDTH_DEF     120
 #define OVERVIEW_SCINTILLA_SCROLL_LINES  1
 
 #define sci_send(sci, msg, wParam, lParam) \
@@ -16,51 +19,13 @@
 static const OverviewColor def_overlay_color         = { 0.0, 0.0, 0.0, 0.25 };
 static const OverviewColor def_overlay_outline_color = { 0.0, 0.0, 0.0, 0.0 };
 
-static gpointer
-overview_color_copy (gpointer boxed)
-{
-  OverviewColor *color = g_slice_new0 (OverviewColor);
-  memcpy (color, boxed, sizeof (OverviewColor));
-  return color;
-}
-
-static void
-overview_color_free (gpointer boxed)
-{
-  if (boxed != NULL)
-    g_slice_free (OverviewColor, boxed);
-}
-
-static inline gboolean
-overview_color_equal (const OverviewColor *color1,
-                      const OverviewColor *color2)
-{
-  return (color1->red == color2->red &&
-          color1->green == color2->green &&
-          color1->blue == color2->blue &&
-          color1->alpha == color2->alpha);
-}
-
-GType
-overview_color_get_type (void)
-{
-  static GType type = 0;
-  if (type == 0)
-    {
-      type =
-        g_boxed_type_register_static ("OverviewColor",
-                                      overview_color_copy,
-                                      overview_color_free);
-    }
-  return type;
-}
-
 enum
 {
   PROP_0,
   PROP_SCINTILLA,
   PROP_CURSOR,
   PROP_VISIBLE_RECT,
+  PROP_WIDTH,
   PROP_ZOOM,
   PROP_SHOW_TOOLTIP,
   PROP_OVERLAY_ENABLED,
@@ -80,6 +45,7 @@ struct OverviewScintilla_
   GdkCursorType    cursor;          // the chosen mouse cursor to use over the scintilla
   GdkCursorType    active_cursor;   // the cursor to draw
   GdkRectangle     visible_rect;    // visible region rectangle
+  guint            width;           // width of the overview
   gint             zoom;            // zoom level of scintilla
   gboolean         show_tooltip;    // whether tooltip shown on hover
   gboolean         overlay_enabled; // whether the visible overlay is drawn
@@ -138,8 +104,6 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                          scintilla_get_type (),
                          G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_SCINTILLA, pspecs[PROP_SCINTILLA]);
-
   pspecs[PROP_CURSOR] =
     g_param_spec_enum ("cursor",
                        "Cursor",
@@ -148,8 +112,6 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                        OVERVIEW_SCINTILLA_CURSOR,
                        G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_CURSOR, pspecs[PROP_CURSOR]);
-
   pspecs[PROP_VISIBLE_RECT] =
     g_param_spec_boxed ("visible-rect",
                        "VisibleRect",
@@ -157,7 +119,14 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                        GDK_TYPE_RECTANGLE,
                        G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_VISIBLE_RECT, pspecs[PROP_VISIBLE_RECT]);
+  pspecs[PROP_WIDTH] =
+    g_param_spec_uint ("width",
+                       "Width",
+                       "Width of the overview",
+                       OVERVIEW_SCINTILLA_WIDTH_MIN,
+                       OVERVIEW_SCINTILLA_WIDTH_MAX,
+                       OVERVIEW_SCINTILLA_WIDTH_DEF,
+                       G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
   pspecs[PROP_ZOOM] =
     g_param_spec_int ("zoom",
@@ -168,16 +137,12 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                       OVERVIEW_SCINTILLA_ZOOM_DEF,
                       G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_ZOOM, pspecs[PROP_ZOOM]);
-
   pspecs[PROP_SHOW_TOOLTIP] =
     g_param_spec_boolean ("show-tooltip",
                           "ShowTooltip",
                           "Whether to show a tooltip with addition info on mouse over",
                           TRUE,
                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-  g_object_class_install_property (g_object_class, PROP_SHOW_TOOLTIP, pspecs[PROP_SHOW_TOOLTIP]);
 
   pspecs[PROP_OVERLAY_ENABLED] =
     g_param_spec_boolean ("overlay-enabled",
@@ -186,16 +151,12 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                           TRUE,
                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_OVERLAY_ENABLED, pspecs[PROP_OVERLAY_ENABLED]);
-
   pspecs[PROP_OVERLAY_COLOR] =
     g_param_spec_boxed ("overlay-color",
                         "OverlayColor",
                         "The color of the overlay, if enabled",
                         OVERVIEW_TYPE_COLOR,
                         G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-  g_object_class_install_property (g_object_class, PROP_OVERLAY_COLOR, pspecs[PROP_OVERLAY_COLOR]);
 
   pspecs[PROP_OVERLAY_OUTLINE_COLOR] =
     g_param_spec_boxed ("overlay-outline-color",
@@ -204,16 +165,12 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                         OVERVIEW_TYPE_COLOR,
                         G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_OVERLAY_OUTLINE_COLOR, pspecs[PROP_OVERLAY_OUTLINE_COLOR]);
-
   pspecs[PROP_DOUBLE_BUFFERED] =
     g_param_spec_boolean ("double-buffered",
                           "DoubleBuffered",
                           "Whether the overview Scintilla's internal canvas is double-buffered",
                           TRUE,
                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-  g_object_class_install_property (g_object_class, PROP_DOUBLE_BUFFERED, pspecs[PROP_DOUBLE_BUFFERED]);
 
   pspecs[PROP_SCROLL_LINES] =
     g_param_spec_int ("scroll-lines",
@@ -222,8 +179,6 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                       -1, 100, OVERVIEW_SCINTILLA_SCROLL_LINES,
                       G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_SCROLL_LINES, pspecs[PROP_SCROLL_LINES]);
-
   pspecs[PROP_SHOW_SCROLLBAR] =
     g_param_spec_boolean ("show-scrollbar",
                           "ShowScrollbar",
@@ -231,7 +186,7 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                           TRUE,
                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-  g_object_class_install_property (g_object_class, PROP_SHOW_SCROLLBAR, pspecs[PROP_SHOW_SCROLLBAR]);
+  g_object_class_install_properties (g_object_class, N_PROPERTIES, pspecs);
 }
 
 static void
@@ -436,8 +391,9 @@ overview_scintilla_update_cursor (OverviewScintilla *self)
 {
   if (GTK_IS_WIDGET (self->canvas) && gtk_widget_get_mapped (self->canvas))
     {
-      gdk_window_set_cursor (gtk_widget_get_window (self->canvas),
-                             gdk_cursor_new (self->active_cursor));
+      GdkCursor *cursor = gdk_cursor_new (self->active_cursor);
+      gdk_window_set_cursor (gtk_widget_get_window (self->canvas), cursor);
+      gdk_cursor_unref (cursor);
     }
 }
 
@@ -661,6 +617,7 @@ overview_scintilla_init (OverviewScintilla *self)
   self->active_cursor   = OVERVIEW_SCINTILLA_CURSOR;
   self->connected_ce    = FALSE;
   self->update_rect     = 0;
+  self->width           = OVERVIEW_SCINTILLA_WIDTH_DEF;
   self->zoom            = OVERVIEW_SCINTILLA_ZOOM_DEF;
   self->mouse_down      = FALSE;
   self->show_tooltip    = TRUE;
@@ -703,6 +660,9 @@ overview_scintilla_set_property (GObject      *object,
       break;
     case PROP_VISIBLE_RECT:
       overview_scintilla_set_visible_rect (self, g_value_get_boxed (value));
+      break;
+    case PROP_WIDTH:
+      overview_scintilla_set_width (self, g_value_get_uint (value));
       break;
     case PROP_ZOOM:
       overview_scintilla_set_zoom (self, g_value_get_int (value));
@@ -757,6 +717,9 @@ overview_scintilla_get_property (GObject      *object,
         g_value_set_boxed (value, &rect);
         break;
       }
+    case PROP_WIDTH:
+      g_value_set_uint (value, overview_scintilla_get_width (self));
+      break;
     case PROP_ZOOM:
       g_value_set_int (value, overview_scintilla_get_zoom (self));
       break;
@@ -919,6 +882,8 @@ overview_scintilla_update_sci (OverviewScintilla *self)
   sci_send (sci, SETMOUSEDOWNCAPTURES, 0, 0);
   sci_send (sci, SETCARETPERIOD, 0, 0);
   sci_send (sci, SETCARETWIDTH, 0, 0);
+  sci_send (sci, SETEXTRAASCENT, 0, 0);
+  sci_send (sci, SETEXTRADESCENT, 0, 0);
 
   overview_scintilla_update_cursor (self);
 
@@ -1008,6 +973,23 @@ overview_scintilla_set_visible_rect (OverviewScintilla  *self,
         gtk_widget_queue_draw (self->canvas);
       g_object_notify (G_OBJECT (self), "visible-rect");
     }
+}
+
+guint
+overview_scintilla_get_width (OverviewScintilla *self)
+{
+  GtkAllocation alloc;
+  g_return_val_if_fail (OVERVIEW_IS_SCINTILLA (self), 0);
+  gtk_widget_get_allocation (GTK_WIDGET (self), &alloc);
+  return alloc.width;
+}
+
+void
+overview_scintilla_set_width (OverviewScintilla *self,
+                              guint              width)
+{
+  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
+  gtk_widget_set_size_request (GTK_WIDGET (self), width, -1);
 }
 
 gint

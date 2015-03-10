@@ -475,6 +475,9 @@ create_prefs_table (void)
 static void
 apply_prefs_to_all_overlays (void)
 {
+  // FIXME: shouldn't use documents_array here but foreach_document() was
+  // giving back bad documents causing segfaults when accessed. macro
+  // substitution evil?
   for (guint i = 0; i < documents_array->len; i++)
     {
       GeanyDocument *doc = documents_array->pdata[i];
