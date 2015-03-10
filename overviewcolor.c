@@ -166,10 +166,10 @@ overview_color_from_keyfile   (OverviewColor *color,
                                const gchar   *option,
                                GError       **error)
 {
-  gchar *color_key;
-  gchar *alpha_key;
-  gchar *clr_str;
-  gint   alpha;
+  gchar  *color_key;
+  gchar  *alpha_key;
+  gchar  *clr_str;
+  gdouble alpha;
 
   g_return_val_if_fail (color != NULL, FALSE);
   g_return_val_if_fail (keyfile != NULL, FALSE);
@@ -189,7 +189,7 @@ overview_color_from_keyfile   (OverviewColor *color,
 
   g_free (color_key);
 
-  alpha = g_key_file_get_integer (keyfile, section, alpha_key, error);
+  alpha = g_key_file_get_double (keyfile, section, alpha_key, error);
   if (*error != NULL)
     {
       g_free (alpha_key);
@@ -199,11 +199,11 @@ overview_color_from_keyfile   (OverviewColor *color,
 
   g_free (alpha_key);
 
-  if (alpha < 0 || alpha > 255)
-    g_warning ("alpha value '%d' from keyfile out of 0-255 range", alpha);
+  if (alpha < 0.0 || alpha > 1.0)
+    g_warning ("alpha value '%g' from keyfile out of 0-1 range", alpha);
 
   overview_color_parse (color, clr_str);
-  color->alpha = (gdouble)(alpha&0xFF) / 255.0;
+  color->alpha = alpha;
 
   g_free (clr_str);
 
@@ -219,7 +219,6 @@ overview_color_to_keyfile (const OverviewColor *color,
   gchar *color_key;
   gchar *alpha_key;
   gchar *clr_str;
-  gint   alpha;
 
   g_return_val_if_fail (color != NULL, FALSE);
   g_return_val_if_fail (keyfile != NULL, FALSE);
@@ -234,8 +233,7 @@ overview_color_to_keyfile (const OverviewColor *color,
   g_free (color_key);
   g_free (clr_str);
 
-  alpha = (guint8)(color->alpha * 255.0);
-  g_key_file_set_integer (keyfile, section, alpha_key, alpha);
+  g_key_file_set_double (keyfile, section, alpha_key, color->alpha);
   g_free (alpha_key);
 
   return TRUE;
@@ -247,9 +245,11 @@ overview_color_from_color_button (OverviewColor  *color,
 {
   GdkColor gcolor;
   guint16  alpha;
+  gdouble  falpha;
   gtk_color_button_get_color (button, &gcolor);
   alpha = gtk_color_button_get_alpha (button);
-  overview_color_from_gdk_color (color, &gcolor, (gdouble)alpha / G_MAXUINT16);
+  falpha = (gdouble) alpha / (gdouble) G_MAXUINT16;
+  overview_color_from_gdk_color (color, &gcolor, falpha);
 }
 
 void
@@ -260,7 +260,7 @@ overview_color_to_color_button (const OverviewColor *color,
   guint16  alpha;
   overview_color_to_gdk_color (color, &gcolor);
   gtk_color_button_set_color (button, &gcolor);
-  alpha = (guint16)(color->alpha * G_MAXUINT16);
+  alpha = (guint16)(color->alpha * (gdouble) G_MAXUINT16);
   gtk_color_button_set_alpha (button, alpha);
 }
 

@@ -1,4 +1,4 @@
-PREFIX = ~/.config/geany/plugins/
+PREFIX = ${HOME}/.config/geany/plugins
 PLUGINDIR = $(PREFIX)/overview
 
 sources = \
@@ -11,7 +11,7 @@ sources = \
 objects = $(sources:.c=.o)
 
 cflags = $(CFLAGS) -g -fPIC -std=c99 $(shell pkg-config --cflags geany) \
-	-DOVERVIEW_PREFS_UI_FILE=\""$(PLUGINDIR)/prefs.glade"\" \
+	-DOVERVIEW_PREFS_UI_FILE=\""$(PLUGINDIR)/prefs.ui"\" \
 	-DOVERVIEW_PREFS_CONFIG_FILE=\""$(PLUGINDIR)/prefs.conf"\"
 
 ldflags = $(LDFLAGS) $(shell pkg-config --libs geany)
@@ -22,8 +22,9 @@ clean:
 	$(RM) *.o *.so
 
 install:
+	mkdir -p $(PLUGINDIR)/
 	cp overview.so $(PREFIX)/
-	cp prefs.glade $(PLUGINDIR)/
+	cp prefs.ui $(PLUGINDIR)/
 
 overview.so: $(objects)
 	$(CC) -shared $(cflags) -o $@ $(objects) $(ldflags)

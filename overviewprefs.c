@@ -4,10 +4,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#ifndef OVERVIEW_PREFS_UI_FILE
-# error "You must define OVERVIEW_PREFS_UI_FILE to the full GtkBuilder UI file path"
-#endif
-
 enum
 {
   PROP_0,
@@ -106,37 +102,48 @@ overview_prefs_set_property (GObject      *object,
     {
     case PROP_WIDTH:
       self->width = g_value_get_uint (value);
+      g_object_notify (object, "width");
       break;
     case PROP_ZOOM:
       self->zoom = g_value_get_int (value);
+      g_object_notify (object, "zoom");
       break;
     case PROP_SHOW_TOOLTIP:
       self->show_tt = g_value_get_boolean (value);
+      g_object_notify (object, "show-tooltip");
       break;
     case PROP_SHOW_SCROLLBAR:
       self->show_sb = g_value_get_boolean (value);
+      g_object_notify (object, "show-scrollbar");
       break;
     case PROP_DOUBLE_BUFFERED:
       self->dbl_buf = g_value_get_boolean (value);
+      g_object_notify (object, "double-buffered");
       break;
     case PROP_SCROLL_LINES:
       self->scr_lines = g_value_get_uint (value);
+      g_object_notify (object, "scroll-lines");
       break;
     case PROP_OVERLAY_ENABLED:
       self->ovl_en = g_value_get_boolean (value);
+      g_object_notify (object, "overlay-enabled");
       break;
     case PROP_OVERLAY_COLOR:
-    {
-      OverviewColor *src = g_value_get_boxed (value);
-      memcpy (&self->ovl_clr, src, sizeof (OverviewColor));
-      break;
-    }
+      {
+        OverviewColor *src = g_value_get_boxed (value);
+        if (src != NULL)
+          memcpy (&self->ovl_clr, src, sizeof (OverviewColor));
+        g_object_notify (object, "overlay-color");
+        break;
+      }
     case PROP_OVERLAY_OUTLINE_COLOR:
-    {
-      OverviewColor *src = g_value_get_boxed (value);
-      memcpy (&self->out_clr, src, sizeof (OverviewColor));
-      break;
-    }
+      {
+        OverviewColor *src = g_value_get_boxed (value);
+        if (src != NULL)
+          memcpy (&self->out_clr, src, sizeof (OverviewColor));
+        g_object_notify (object, "overlay-outline-color");
+        break;
+      }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -247,7 +254,7 @@ overview_prefs_save (OverviewPrefs *self,
       g_key_file_free (kf);                            \
       return FALSE;                                    \
     } else {                                           \
-      g_object_notify (G_OBJECT (self), "k");          \
+      g_object_notify (G_OBJECT (self), k);            \
     }                                                  \
   } while (0)
 

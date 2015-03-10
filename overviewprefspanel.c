@@ -133,14 +133,14 @@ on_overlay_enable_toggled (GtkToggleButton    *button,
 static void
 overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
 {
-  guint         uval;
-  gint          ival;
-  OverviewColor cval;
-  gboolean      bval;
+  guint          uval;
+  gint           ival;
+  OverviewColor *cval = NULL;
+  gboolean       bval;
 
   g_object_get (self->prefs, "width", &uval, NULL);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->width_spin), uval);
-  g_object_get (self->prefs, "zoom-spin", &ival, NULL);
+  g_object_get (self->prefs, "zoom", &ival, NULL);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->zoom_spin), ival);
   g_object_get (self->prefs, "show-tooltip", &bval, NULL);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_tt_yes), bval);
@@ -151,11 +151,20 @@ overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
   g_object_get (self->prefs, "scroll-lines", &uval, NULL);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->scr_lines_spin), uval);
   g_object_get (self->prefs, "overlay-enabled", &bval, NULL);
+  g_object_freeze_notify (G_OBJECT (self->ovl_en_yes));
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes), bval);
+  g_object_thaw_notify (G_OBJECT (self->ovl_en_yes));
   g_object_get (self->prefs, "overlay-color", &cval, NULL);
-  overview_color_to_color_button (&cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
+  overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
+  overview_color_free (cval);
+  cval = NULL;
   g_object_get (self->prefs, "overlay-outline-color", &cval, NULL);
-  overview_color_to_color_button (&cval, GTK_COLOR_BUTTON (self->out_clr_btn));
+  overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->out_clr_btn));
+  overview_color_free (cval);
+  gtk_widget_set_sensitive (self->ovl_clr_lbl, bval);
+  gtk_widget_set_sensitive (self->ovl_clr_btn, bval);
+  gtk_widget_set_sensitive (self->out_clr_lbl, bval);
+  gtk_widget_set_sensitive (self->out_clr_btn, bval);
 
   g_signal_emit_by_name (self, "prefs-loaded", self->prefs);
 }
@@ -185,7 +194,7 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   self->ovl_en_yes     = builder_get_widget (builder, "overlay-enabled-yes-check");
   self->ovl_clr_lbl    = builder_get_widget (builder, "overlay-color-label");
   self->ovl_clr_btn    = builder_get_widget (builder, "overlay-color");
-  self->out_clr_lbl    = builder_get_widget (builder, "overlay-outline-color-label");
+  self->out_clr_lbl    = builder_get_widget (builder, "overlay-outline-label");
   self->out_clr_btn    = builder_get_widget (builder, "overlay-outline-color");
 
   g_object_unref (builder);
@@ -195,8 +204,6 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   g_object_unref (self->prefs_table);
 
   g_signal_connect (self->ovl_en_yes, "toggled", G_CALLBACK (on_overlay_enable_toggled), self);
-
-  overview_prefs_panel_load_prefs (self);
 }
 
 static void
@@ -223,6 +230,7 @@ overview_prefs_panel_new (OverviewPrefs *prefs,
   OverviewPrefsPanel *self;
   self = g_object_new (OVERVIEW_TYPE_PREFS_PANEL, NULL);
   self->prefs = g_object_ref (prefs);
-  g_signal_connect (host_dialog, "response-id", G_CALLBACK (on_host_dialog_response), self);
+  g_signal_connect (host_dialog, "response", G_CALLBACK (on_host_dialog_response), self);
+  overview_prefs_panel_load_prefs (self);
   return GTK_WIDGET (self);
 }

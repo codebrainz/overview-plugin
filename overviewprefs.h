@@ -33,6 +33,21 @@ gchar*         overview_prefs_to_data        (OverviewPrefs *prefs,
 void           overview_prefs_bind_scintilla (OverviewPrefs *prefs,
                                               GObject       *sci);
 
+#define OVERVIEW_PREFS_DEFAULT_CONFIG   \
+    "[overview]\n"                      \
+    "width = 120\n"                     \
+    "zoom = -10\n"                      \
+    "show-tooltip = true\n"             \
+    "double-buffered = true\n"          \
+    "scroll-lines = 1\n"                \
+    "show-scrollbar = true\n"           \
+    "overlay-enabled = true\n"          \
+    "overlay-color = #000000\n"         \
+    "overlay-alpha = 0.25\n"            \
+    "overlay-outline-color = #000000\n" \
+    "overlay-outline-alpha = 0.75\n"    \
+    "\n"
+
 G_END_DECLS
 
 #endif /* OVERVIEWPREFS_H_ */
