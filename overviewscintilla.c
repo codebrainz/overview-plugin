@@ -31,6 +31,7 @@ enum
   PROP_OVERLAY_ENABLED,
   PROP_OVERLAY_COLOR,
   PROP_OVERLAY_OUTLINE_COLOR,
+  PROP_OVERLAY_INVERTED,
   PROP_DOUBLE_BUFFERED,
   PROP_SCROLL_LINES,
   PROP_SHOW_SCROLLBAR,
@@ -51,6 +52,7 @@ struct OverviewScintilla_
   gboolean         overlay_enabled; // whether the visible overlay is drawn
   OverviewColor    overlay_color;   // the color of the visible overlay
   OverviewColor    overlay_outline_color; // the color of the outline of the overlay
+  gboolean         overlay_inverted;// draw overlay over the visible area instead of around it
   gboolean         double_buffered; // whether to enable double-buffering on internal scintilla canvas
   gint             scroll_lines;    // number of lines to scroll each scroll-event
   gboolean         show_scrollbar;  // show the main scintilla's scrollbar
@@ -165,6 +167,13 @@ overview_scintilla_class_init (OverviewScintillaClass *klass)
                         OVERVIEW_TYPE_COLOR,
                         G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
+  pspecs[PROP_OVERLAY_INVERTED] =
+    g_param_spec_boolean ("overlay-inverted",
+                          "OverlayInverted",
+                          "Whether to draw the overlay over the visible area",
+                          TRUE,
+                          G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
   pspecs[PROP_DOUBLE_BUFFERED] =
     g_param_spec_boolean ("double-buffered",
                           "DoubleBuffered",
@@ -226,31 +235,44 @@ overview_scintilla_draw_real (OverviewScintilla *self,
   cairo_set_line_width (cr, 1.0);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_GOOD);
 
-  // draw a rectangle at the top and bottom to obscure the non-visible area
-  cairo_set_source_overlay_color_ (cr, &self->overlay_color);
-  cairo_rectangle (cr, 0, 0, alloc.width, self->visible_rect.y);
-  cairo_rectangle (cr,
-                   0,
-                   self->visible_rect.y + self->visible_rect.height,
-                   alloc.width,
-                   alloc.height - (self->visible_rect.y + self->visible_rect.height));
-  cairo_fill (cr);
-
-  // draw a highlighting border at top and bottom of visible rect
-  cairo_set_source_overlay_color_ (cr, &self->overlay_outline_color);
-  cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5);
-  cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5);
-  cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5 + self->visible_rect.height);
-  cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5 + self->visible_rect.height);
-  cairo_stroke (cr);
-
-  // draw a left border if there's no scrollbar
-  if (! overview_scintilla_get_show_scrollbar (self))
+  if (self->overlay_inverted)
     {
-      cairo_move_to (cr, 0.5, 0.5);
-      cairo_line_to (cr, 0.5, alloc.height);
-      cairo_stroke (cr);
+      cairo_set_source_overlay_color_ (cr, &self->overlay_color);
+      cairo_rectangle (cr,
+                       0,
+                       self->visible_rect.y,
+                       alloc.width,
+                       self->visible_rect.height);
+      cairo_fill (cr);
     }
+  else
+    {
+      // draw a rectangle at the top and bottom to obscure the non-visible area
+      cairo_set_source_overlay_color_ (cr, &self->overlay_color);
+      cairo_rectangle (cr, 0, 0, alloc.width, self->visible_rect.y);
+      cairo_rectangle (cr,
+                       0,
+                       self->visible_rect.y + self->visible_rect.height,
+                       alloc.width,
+                       alloc.height - (self->visible_rect.y + self->visible_rect.height));
+      cairo_fill (cr);
+    }
+
+    // draw a highlighting border at top and bottom of visible rect
+    cairo_set_source_overlay_color_ (cr, &self->overlay_outline_color);
+    cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5);
+    cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5);
+    cairo_move_to (cr, self->visible_rect.x + 0.5, self->visible_rect.y + 0.5 + self->visible_rect.height);
+    cairo_line_to (cr, self->visible_rect.width, self->visible_rect.y + 0.5 + self->visible_rect.height);
+    cairo_stroke (cr);
+
+    // draw a left border if there's no scrollbar
+    if (! overview_scintilla_get_show_scrollbar (self))
+      {
+        cairo_move_to (cr, 0.5, 0.5);
+        cairo_line_to (cr, 0.5, alloc.height);
+        cairo_stroke (cr);
+      }
 
   cairo_restore (cr);
 }
@@ -624,6 +646,7 @@ overview_scintilla_init (OverviewScintilla *self)
   self->double_buffered = TRUE;
   self->scroll_lines    = OVERVIEW_SCINTILLA_SCROLL_LINES;
   self->show_scrollbar  = TRUE;
+  self->overlay_inverted = TRUE;
 
   memset (&self->visible_rect, 0, sizeof (GdkRectangle));
   memcpy (&self->overlay_color, &def_overlay_color, sizeof (OverviewColor));
@@ -678,6 +701,9 @@ overview_scintilla_set_property (GObject      *object,
       break;
     case PROP_OVERLAY_OUTLINE_COLOR:
       overview_scintilla_set_overlay_outline_color (self, g_value_get_boxed (value));
+      break;
+    case PROP_OVERLAY_INVERTED:
+      overview_scintilla_set_overlay_inverted (self, g_value_get_boolean (value));
       break;
     case PROP_DOUBLE_BUFFERED:
       overview_scintilla_set_double_buffered (self, g_value_get_boolean (value));
@@ -743,6 +769,9 @@ overview_scintilla_get_property (GObject      *object,
         g_value_set_boxed (value, &color);
         break;
       }
+    case PROP_OVERLAY_INVERTED:
+      g_value_set_boolean (value, overview_scintilla_get_overlay_inverted (self));
+      break;
     case PROP_DOUBLE_BUFFERED:
       g_value_set_boolean (value, overview_scintilla_get_double_buffered (self));
       break;
@@ -1134,6 +1163,27 @@ overview_scintilla_set_overlay_outline_color (OverviewScintilla   *self,
       if (GTK_IS_WIDGET (self->canvas))
         gtk_widget_queue_draw (self->canvas);
       g_object_notify (G_OBJECT (self), "overlay-outline-color");
+    }
+}
+
+gboolean
+overview_scintilla_get_overlay_inverted (OverviewScintilla *self)
+{
+  g_return_val_if_fail (OVERVIEW_IS_SCINTILLA (self), FALSE);
+  return self->overlay_inverted;
+}
+
+void
+overview_scintilla_set_overlay_inverted (OverviewScintilla *self,
+                                         gboolean           inverted)
+{
+  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
+
+  if (inverted != self->overlay_inverted)
+    {
+      self->overlay_inverted = inverted;
+      overview_scintilla_queue_draw (self);
+      g_object_notify (G_OBJECT (self), "overlay-inverted");
     }
 }
 

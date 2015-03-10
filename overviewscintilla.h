@@ -46,6 +46,9 @@ void          overview_scintilla_get_overlay_outline_color (OverviewScintilla   
                                                             OverviewColor       *color);
 void          overview_scintilla_set_overlay_outline_color (OverviewScintilla   *sci,
                                                             const OverviewColor *color);
+gboolean      overview_scintilla_get_overlay_inverted      (OverviewScintilla   *sci);
+void          overview_scintilla_set_overlay_inverted      (OverviewScintilla   *sci,
+                                                            gboolean             inverted);
 gboolean      overview_scintilla_get_double_buffered       (OverviewScintilla   *sci);
 void          overview_scintilla_set_double_buffered       (OverviewScintilla   *sci,
                                                             gboolean             enabled);

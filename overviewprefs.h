@@ -39,13 +39,14 @@ void           overview_prefs_bind_scintilla (OverviewPrefs *prefs,
     "zoom = -10\n"                      \
     "show-tooltip = true\n"             \
     "double-buffered = true\n"          \
-    "scroll-lines = 1\n"                \
+    "scroll-lines = 4\n"                \
     "show-scrollbar = true\n"           \
     "overlay-enabled = true\n"          \
     "overlay-color = #000000\n"         \
-    "overlay-alpha = 0.25\n"            \
+    "overlay-alpha = 0.10\n"            \
     "overlay-outline-color = #000000\n" \
-    "overlay-outline-alpha = 0.75\n"    \
+    "overlay-outline-alpha = 0.10\n"    \
+    "overlay-inverted = true\n"         \
     "\n"
 
 G_END_DECLS

@@ -16,6 +16,7 @@ enum
   PROP_OVERLAY_ENABLED,
   PROP_OVERLAY_COLOR,
   PROP_OVERLAY_OUTLINE_COLOR,
+  PROP_OVERLAY_INVERTED,
   N_PROPERTIES
 };
 
@@ -32,6 +33,7 @@ struct OverviewPrefs_
   gboolean      ovl_en;
   OverviewColor ovl_clr;
   OverviewColor out_clr;
+  gboolean      ovl_inv;
 };
 
 struct OverviewPrefsClass_
@@ -74,6 +76,7 @@ overview_prefs_class_init (OverviewPrefsClass *klass)
   pspecs[PROP_OVERLAY_ENABLED] = g_param_spec_boolean ("overlay-enabled", "OverlayEnabled", "Whether an overlay is drawn overtop the overview", TRUE, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
   pspecs[PROP_OVERLAY_COLOR] = g_param_spec_boxed ("overlay-color", "OverlayColor", "The color of the overlay", OVERVIEW_TYPE_COLOR, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
   pspecs[PROP_OVERLAY_OUTLINE_COLOR] = g_param_spec_boxed ("overlay-outline-color", "OverlayOutlineColor", "The color of the outlines drawn around the overlay", OVERVIEW_TYPE_COLOR, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+  pspecs[PROP_OVERLAY_INVERTED] = g_param_spec_boolean ("overlay-inverted", "OverlayInverted", "Whether to invert the drawing of the overlay", TRUE, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
   g_object_class_install_properties (g_object_class, N_PROPERTIES, pspecs);
 }
@@ -144,6 +147,10 @@ overview_prefs_set_property (GObject      *object,
         g_object_notify (object, "overlay-outline-color");
         break;
       }
+    case PROP_OVERLAY_INVERTED:
+      self->ovl_inv = g_value_get_boolean (value);
+      g_object_notify (G_OBJECT (self), "overlay-inverted");
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -186,6 +193,9 @@ overview_prefs_get_property (GObject      *object,
       break;
     case PROP_OVERLAY_OUTLINE_COLOR:
       g_value_set_boxed (value, &self->out_clr);
+      break;
+    case PROP_OVERLAY_INVERTED:
+      g_value_set_boolean (value, self->ovl_inv);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -280,13 +290,14 @@ overview_prefs_from_data (OverviewPrefs *self,
       return FALSE;
     }
 
-  GET (uint64,  "width",           self->width);
-  GET (integer, "zoom",            self->zoom);
-  GET (boolean, "show-tooltip",    self->show_tt);
-  GET (boolean, "show-scrollbar",  self->show_sb);
-  GET (boolean, "double-buffered", self->dbl_buf);
-  GET (uint64,  "scroll-lines",    self->scr_lines);
-  GET (boolean, "overlay-enabled", self->ovl_en);
+  GET (uint64,  "width",            self->width);
+  GET (integer, "zoom",             self->zoom);
+  GET (boolean, "show-tooltip",     self->show_tt);
+  GET (boolean, "show-scrollbar",   self->show_sb);
+  GET (boolean, "double-buffered",  self->dbl_buf);
+  GET (uint64,  "scroll-lines",     self->scr_lines);
+  GET (boolean, "overlay-enabled",  self->ovl_en);
+  GET (boolean, "overlay-inverted", self->ovl_inv);
 
   if (! overview_color_from_keyfile (&self->ovl_clr, kf, "overview", "overlay", error))
     {
@@ -321,13 +332,14 @@ overview_prefs_to_data (OverviewPrefs *self,
 
   kf = g_key_file_new ();
 
-  SET (uint64,  "width",           self->width);
-  SET (integer, "zoom",            self->zoom);
-  SET (boolean, "show-tooltip",    self->show_tt);
-  SET (boolean, "show-scrollbar",  self->show_sb);
-  SET (boolean, "double-buffered", self->dbl_buf);
-  SET (uint64,  "scroll-lines",    self->scr_lines);
-  SET (boolean, "overlay-enabled", self->ovl_en);
+  SET (uint64,  "width",            self->width);
+  SET (integer, "zoom",             self->zoom);
+  SET (boolean, "show-tooltip",     self->show_tt);
+  SET (boolean, "show-scrollbar",   self->show_sb);
+  SET (boolean, "double-buffered",  self->dbl_buf);
+  SET (uint64,  "scroll-lines",     self->scr_lines);
+  SET (boolean, "overlay-enabled",  self->ovl_en);
+  SET (boolean, "overlay-inverted", self->ovl_inv);
 
   overview_color_to_keyfile (&self->ovl_clr, kf, "overview", "overlay");
   overview_color_to_keyfile (&self->out_clr, kf, "overview", "overlay-outline");
@@ -356,4 +368,5 @@ overview_prefs_bind_scintilla (OverviewPrefs *self,
   BIND ("overlay-enabled");
   BIND ("overlay-color");
   BIND ("overlay-outline-color");
+  BIND ("overlay-inverted");
 }

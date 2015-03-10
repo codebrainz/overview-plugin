@@ -17,6 +17,9 @@ struct OverviewPrefsPanel_
   GtkWidget     *ovl_clr_btn;
   GtkWidget     *out_clr_lbl;
   GtkWidget     *out_clr_btn;
+  GtkWidget     *ovl_inv_lbl;
+  GtkWidget     *ovl_inv_hbox;
+  GtkWidget     *ovl_inv_yes;
 };
 
 struct OverviewPrefsPanelClass_
@@ -110,6 +113,8 @@ overview_prefs_panel_store_prefs (OverviewPrefsPanel *self)
   g_object_set (self->prefs, "scroll-lines", uval, NULL);
   bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes));
   g_object_set (self->prefs, "overlay-enabled", bval, NULL);
+  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes));
+  g_object_set (self->prefs, "overlay-inverted", bval, NULL);
   overview_color_from_color_button (&cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
   g_object_set (self->prefs, "overlay-color", &cval, NULL);
   overview_color_from_color_button (&cval, GTK_COLOR_BUTTON (self->out_clr_btn));
@@ -128,6 +133,8 @@ on_overlay_enable_toggled (GtkToggleButton    *button,
   gtk_widget_set_sensitive (self->ovl_clr_btn, active);
   gtk_widget_set_sensitive (self->out_clr_lbl, active);
   gtk_widget_set_sensitive (self->out_clr_btn, active);
+  gtk_widget_set_sensitive (self->ovl_inv_lbl, active);
+  gtk_widget_set_sensitive (self->ovl_inv_hbox, active);
 }
 
 static void
@@ -154,6 +161,12 @@ overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
   g_object_freeze_notify (G_OBJECT (self->ovl_en_yes));
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes), bval);
   g_object_thaw_notify (G_OBJECT (self->ovl_en_yes));
+  gtk_widget_set_sensitive (self->ovl_clr_lbl, bval);
+  gtk_widget_set_sensitive (self->ovl_clr_btn, bval);
+  gtk_widget_set_sensitive (self->out_clr_lbl, bval);
+  gtk_widget_set_sensitive (self->out_clr_btn, bval);
+  gtk_widget_set_sensitive (self->ovl_inv_lbl, bval);
+  gtk_widget_set_sensitive (self->ovl_inv_hbox, bval);
   g_object_get (self->prefs, "overlay-color", &cval, NULL);
   overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
   overview_color_free (cval);
@@ -161,10 +174,8 @@ overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
   g_object_get (self->prefs, "overlay-outline-color", &cval, NULL);
   overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->out_clr_btn));
   overview_color_free (cval);
-  gtk_widget_set_sensitive (self->ovl_clr_lbl, bval);
-  gtk_widget_set_sensitive (self->ovl_clr_btn, bval);
-  gtk_widget_set_sensitive (self->out_clr_lbl, bval);
-  gtk_widget_set_sensitive (self->out_clr_btn, bval);
+  g_object_get (self->prefs, "overlay-inverted", &bval, NULL);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes), bval);
 
   g_signal_emit_by_name (self, "prefs-loaded", self->prefs);
 }
@@ -196,6 +207,9 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   self->ovl_clr_btn    = builder_get_widget (builder, "overlay-color");
   self->out_clr_lbl    = builder_get_widget (builder, "overlay-outline-label");
   self->out_clr_btn    = builder_get_widget (builder, "overlay-outline-color");
+  self->ovl_inv_lbl    = builder_get_widget (builder, "overlay-inverted-label");
+  self->ovl_inv_hbox   = builder_get_widget (builder, "overlay-inverted-hbox");
+  self->ovl_inv_yes    = builder_get_widget (builder, "overlay-inverted-yes-check");
 
   g_object_unref (builder);
 
