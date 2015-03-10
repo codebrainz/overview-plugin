@@ -289,15 +289,17 @@ overview_prefs_save (OverviewPrefs *self,
   return TRUE;
 }
 
-#define GET(T, k, v)                                   \
-  do {                                                 \
-    v = g_key_file_get_##T (kf, "overview", k, error); \
-    if (error != NULL && *error != NULL) {             \
-      g_key_file_free (kf);                            \
-      return FALSE;                                    \
-    } else {                                           \
-      g_object_notify (G_OBJECT (self), k);            \
-    }                                                  \
+#define GET(T, k, v)                                     \
+  do {                                                   \
+    if (g_key_file_has_key (kf, "overview", k, NULL)) {  \
+      v = g_key_file_get_##T (kf, "overview", k, error); \
+      if (error != NULL && *error != NULL) {             \
+        g_key_file_free (kf);                            \
+        return FALSE;                                    \
+      } else {                                           \
+        g_object_notify (G_OBJECT (self), k);            \
+      }                                                  \
+    }                                                    \
   } while (0)
 
 gboolean
@@ -332,33 +334,44 @@ overview_prefs_from_data (OverviewPrefs *self,
   GET (boolean, "overlay-enabled",  self->ovl_en);
   GET (boolean, "overlay-inverted", self->ovl_inv);
 
-  pos = g_key_file_get_string (kf, "overview", "position", error);
-  if (error != NULL && *error != NULL)
-    return FALSE;
-  if (g_ascii_strcasecmp (pos, "right") == 0)
-    self->position = GTK_POS_RIGHT;
-  else if (g_ascii_strcasecmp (pos, "left") == 0)
-    self->position = GTK_POS_LEFT;
-  else
+  if (g_key_file_has_key (kf, "overview", "position", NULL))
     {
-      g_warning ("unknown value '%s' for 'position' key", pos);
-      self->position = GTK_POS_RIGHT;
+      pos = g_key_file_get_string (kf, "overview", "position", error);
+      if (error != NULL && *error != NULL)
+        return FALSE;
+      if (g_ascii_strcasecmp (pos, "right") == 0)
+        self->position = GTK_POS_RIGHT;
+      else if (g_ascii_strcasecmp (pos, "left") == 0)
+        self->position = GTK_POS_LEFT;
+      else
+        {
+          g_warning ("unknown value '%s' for 'position' key", pos);
+          self->position = GTK_POS_RIGHT;
+        }
+      g_free (pos);
     }
-  g_free (pos);
 
-  if (! overview_color_from_keyfile (&self->ovl_clr, kf, "overview", "overlay", error))
+  if (g_key_file_has_key (kf, "overview", "overlay-color", NULL) &&
+      g_key_file_has_key (kf, "overview", "overlay-alpha", NULL))
     {
-      g_key_file_free (kf);
-      return FALSE;
+      if (! overview_color_from_keyfile (&self->ovl_clr, kf, "overview", "overlay", error))
+        {
+          g_key_file_free (kf);
+          return FALSE;
+        }
+      g_object_notify (G_OBJECT (self), "overlay-color");
     }
-  g_object_notify (G_OBJECT (self), "overlay-color");
 
-  if (! overview_color_from_keyfile (&self->out_clr, kf, "overview", "overlay-outline", error))
+  if (g_key_file_has_key (kf, "overview", "overlay-outline-color", NULL) &&
+      g_key_file_has_key (kf, "overview", "overlay-outline-alpha", NULL))
     {
-      g_key_file_free (kf);
-      return FALSE;
+      if (! overview_color_from_keyfile (&self->out_clr, kf, "overview", "overlay-outline", error))
+        {
+          g_key_file_free (kf);
+          return FALSE;
+        }
+      g_object_notify (G_OBJECT (self), "overlay-outline-color");
     }
-  g_object_notify (G_OBJECT (self), "overlay-outline-color");
 
   g_key_file_free (kf);
 
