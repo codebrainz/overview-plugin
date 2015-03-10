@@ -9,8 +9,4 @@ extern GeanyData      *geany_data;
 extern GeanyPlugin    *geany_plugin;
 extern GeanyFunctions *geany_functions;
 
-#ifndef _
-# define _(s) (s)
-#endif
-
 #endif // OVERVIEW_PLUGIN_H

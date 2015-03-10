@@ -1,7 +1,7 @@
 #ifndef OVERVIEWPREFS_H_
 #define OVERVIEWPREFS_H_ 1
 
-#include <gtk/gtk.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
@@ -32,8 +32,6 @@ gchar*         overview_prefs_to_data        (OverviewPrefs *prefs,
                                               GError       **error);
 void           overview_prefs_bind_scintilla (OverviewPrefs *prefs,
                                               GObject       *sci);
-GtkWidget*     overview_prefs_create_ui      (OverviewPrefs *prefs,
-                                              GtkDialog     *host_dialog);
 
 G_END_DECLS
 

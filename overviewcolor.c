@@ -83,8 +83,8 @@ overview_color_from_gdk_color (OverviewColor  *color,
 }
 
 void
-overview_color_to_gdk_color (OverviewColor *color,
-                             GdkColor      *gcolor)
+overview_color_to_gdk_color (const OverviewColor *color,
+                             GdkColor            *gcolor)
 {
   g_return_if_fail (color != NULL);
   g_return_if_fail (gcolor != NULL);
@@ -109,8 +109,8 @@ overview_color_from_rgba (OverviewColor *color,
 }
 
 void
-overview_color_to_rgba (OverviewColor *color,
-                        GdkRGBA       *rgba)
+overview_color_to_rgba (const OverviewColor *color,
+                        GdkRGBA             *rgba)
 {
   g_return_if_fail (color != NULL);
   g_return_if_fail (rgba != NULL);
@@ -143,8 +143,8 @@ overview_color_from_int (OverviewColor *color,
 }
 
 guint32
-overview_color_to_int (OverviewColor *color,
-                       gboolean       with_alpha)
+overview_color_to_int (const OverviewColor *color,
+                       gboolean             with_alpha)
 {
   g_return_val_if_fail (color != NULL, 0);
 
@@ -211,10 +211,10 @@ overview_color_from_keyfile   (OverviewColor *color,
 }
 
 gboolean
-overview_color_to_keyfile     (OverviewColor *color,
-                               GKeyFile      *keyfile,
-                               const gchar   *section,
-                               const gchar   *option)
+overview_color_to_keyfile (const OverviewColor *color,
+                           GKeyFile            *keyfile,
+                           const gchar         *section,
+                           const gchar         *option)
 {
   gchar *color_key;
   gchar *alpha_key;
@@ -239,6 +239,29 @@ overview_color_to_keyfile     (OverviewColor *color,
   g_free (alpha_key);
 
   return TRUE;
+}
+
+void
+overview_color_from_color_button (OverviewColor  *color,
+                                  GtkColorButton *button)
+{
+  GdkColor gcolor;
+  guint16  alpha;
+  gtk_color_button_get_color (button, &gcolor);
+  alpha = gtk_color_button_get_alpha (button);
+  overview_color_from_gdk_color (color, &gcolor, (gdouble)alpha / G_MAXUINT16);
+}
+
+void
+overview_color_to_color_button (const OverviewColor *color,
+                                GtkColorButton      *button)
+{
+  GdkColor gcolor;
+  guint16  alpha;
+  overview_color_to_gdk_color (color, &gcolor);
+  gtk_color_button_set_color (button, &gcolor);
+  alpha = (guint16)(color->alpha * G_MAXUINT16);
+  gtk_color_button_set_alpha (button, alpha);
 }
 
 GType
