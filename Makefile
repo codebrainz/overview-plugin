@@ -1,5 +1,6 @@
-PREFIX = ${HOME}/.config/geany/plugins
-PLUGINDIR = $(PREFIX)/overview
+CONFIGDIR ?= ${HOME}/.config/geany
+PREFIX     = $(CONFIGDIR)/plugins
+PLUGINDIR  = $(PREFIX)/overview
 
 sources = \
 	overviewplugin.c \
