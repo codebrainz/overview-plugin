@@ -214,8 +214,8 @@ on_position_pref_notify (OverviewPrefs *prefs,
                          GParamSpec    *pspec,
                          gpointer       user_data)
 {
-  //g_object_get (prefs, "position", &overview_position, NULL);
-  //swap_scintillas ();
+  g_object_get (prefs, "position", &overview_position, NULL);
+  swap_scintillas ();
 }
 
 void
@@ -227,7 +227,6 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   plugin_module_make_resident (geany_plugin);
 
   overview_prefs = overview_prefs_new ();
-  g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
   conf_file = get_config_file ();
   if (! overview_prefs_load (overview_prefs, conf_file, &error))
     {
@@ -236,6 +235,8 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
     }
   g_free (conf_file);
 
+  g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
+  g_object_get (overview_prefs, "position", &overview_position, NULL);
   hijack_all_scintillas ();
 
   plugin_signal_connect (geany_plugin, NULL, "document-new", TRUE, G_CALLBACK (on_document_open_new), NULL);
