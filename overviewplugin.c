@@ -38,8 +38,10 @@ PLUGIN_SET_INFO (
   "0.01",
   "Matthew Brush <matt@geany.org>")
 
-static OverviewPrefs   *overview_prefs    = NULL;
-static gboolean         overview_visible  = TRUE;
+static OverviewPrefs   *overview_prefs     = NULL;
+static gboolean         overview_visible   = TRUE;
+static GtkWidget       *overview_menu_sep  = NULL;
+static GtkWidget       *overview_menu_item = NULL;
 
 static GtkWidget *
 hijack_scintilla (GeanyDocument  *doc,
@@ -290,6 +292,72 @@ on_kb_activate (guint keybinding_id)
   return TRUE;
 }
 
+static gint
+get_menu_item_pos (GtkWidget *menu,
+                   GtkWidget *item_before)
+{
+  GList *children;
+  gint   pos = 0;
+  children = gtk_container_get_children (GTK_CONTAINER (menu));
+  for (GList *iter = children; iter != NULL; iter = g_list_next (iter), pos++)
+    {
+      if (iter->data == item_before)
+        break;
+    }
+  g_list_free (children);
+  return pos + 1;
+}
+
+static void
+on_menu_item_clicked (GtkMenuItem *item,
+                      gpointer     user_data)
+{
+  toggle_overviews_visiblity ();
+}
+
+static GtkWidget *
+add_menu_item (void)
+{
+  static const gchar *view_menu_name = "menu_view1_menu";
+  static const gchar *prev_item_name = "menu_show_sidebar1";
+  GtkWidget          *main_window = geany_data->main_widgets->window;
+  GtkWidget          *view_menu;
+  GtkWidget          *prev_item;
+  gint                item_pos;
+
+  view_menu = ui_lookup_widget (main_window, view_menu_name);
+  if (! GTK_IS_MENU (view_menu))
+    {
+      g_critical ("failed to locate the View menu (%s) in Geany's main menu",
+                  view_menu_name);
+      return NULL;
+    }
+
+  overview_menu_item = gtk_check_menu_item_new_with_label ("Show Overview");
+  prev_item = ui_lookup_widget (main_window, prev_item_name);
+  if (! GTK_IS_MENU_ITEM (prev_item))
+    {
+      g_critical ("failed to locate the Show Sidebar menu item (%s) in Geany's UI",
+                  prev_item_name);
+      overview_menu_sep = gtk_separator_menu_item_new ();
+      gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), overview_menu_sep);
+      gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), overview_menu_item);
+      gtk_widget_show (overview_menu_sep);
+    }
+  else
+    {
+      item_pos = get_menu_item_pos (view_menu, prev_item);
+      overview_menu_sep = NULL;
+      gtk_menu_shell_insert (GTK_MENU_SHELL (view_menu), overview_menu_item, item_pos);
+    }
+
+  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (overview_menu_item), TRUE);
+  g_signal_connect (overview_menu_item, "toggled", G_CALLBACK (on_menu_item_clicked), NULL);
+  gtk_widget_show (overview_menu_item);
+
+  return overview_menu_item;
+}
+
 void
 plugin_init (G_GNUC_UNUSED GeanyData *data)
 {
@@ -297,8 +365,10 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
   GError         *error = NULL;
   GeanyKeyGroup  *key_group;
   GtkPositionType pos = GTK_POS_RIGHT;
+  GtkWidget      *menu_item;
 
   plugin_module_make_resident (geany_plugin);
+  menu_item = add_menu_item ();
 
   key_group = plugin_set_key_group (geany_plugin,
                                     "overview",
@@ -310,7 +380,7 @@ plugin_init (G_GNUC_UNUSED GeanyData *data)
                         NULL, 0, 0,
                         "toggle-visibility",
                         "Toggle Visibility",
-                        NULL);
+                        menu_item);
 
   keybindings_set_item (key_group,
                         KB_TOGGLE_POSITION,
@@ -349,6 +419,12 @@ void
 plugin_cleanup (void)
 {
   restore_all_scintillas ();
+
+  if (GTK_IS_WIDGET (overview_menu_sep))
+    gtk_widget_destroy (overview_menu_sep);
+  gtk_widget_destroy (overview_menu_item);
+  overview_menu_sep = NULL;
+  overview_menu_item = NULL;
 
   if (OVERVIEW_IS_PREFS (overview_prefs))
     g_object_unref (overview_prefs);
