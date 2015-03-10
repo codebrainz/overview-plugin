@@ -42,6 +42,7 @@ struct OverviewPrefsPanel_
   GtkWidget     *ovl_inv_lbl;
   GtkWidget     *ovl_inv_hbox;
   GtkWidget     *ovl_inv_yes;
+  GtkWidget     *pos_left_check;
 };
 
 struct OverviewPrefsPanelClass_
@@ -141,6 +142,8 @@ overview_prefs_panel_store_prefs (OverviewPrefsPanel *self)
   g_object_set (self->prefs, "overlay-color", &cval, NULL);
   overview_color_from_color_button (&cval, GTK_COLOR_BUTTON (self->out_clr_btn));
   g_object_set (self->prefs, "overlay-outline-color", &cval, NULL);
+  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->pos_left_check));
+  g_object_set (self->prefs, "position", bval ? GTK_POS_LEFT : GTK_POS_RIGHT, NULL);
 
   g_signal_emit_by_name (self, "prefs-stored", self->prefs);
 }
@@ -198,6 +201,8 @@ overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
   overview_color_free (cval);
   g_object_get (self->prefs, "overlay-inverted", &bval, NULL);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes), bval);
+  g_object_get (self->prefs, "position", &ival, NULL);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->pos_left_check), ival == GTK_POS_LEFT);
 
   g_signal_emit_by_name (self, "prefs-loaded", self->prefs);
 }
@@ -232,6 +237,7 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   self->ovl_inv_lbl    = builder_get_widget (builder, "overlay-inverted-label");
   self->ovl_inv_hbox   = builder_get_widget (builder, "overlay-inverted-hbox");
   self->ovl_inv_yes    = builder_get_widget (builder, "overlay-inverted-yes-check");
+  self->pos_left_check = builder_get_widget (builder, "position-left-check");
 
   g_object_unref (builder);
 

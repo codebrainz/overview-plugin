@@ -16,9 +16,9 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="overview-zoom-adjustment">
-    <property name="lower">-100</property>
-    <property name="upper">100</property>
-    <property name="value">-20</property>
+    <property name="lower">-10</property>
+    <property name="upper">20</property>
+    <property name="value">-10</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -26,7 +26,7 @@
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="border_width">12</property>
-    <property name="n_rows">7</property>
+    <property name="n_rows">8</property>
     <property name="n_columns">2</property>
     <property name="column_spacing">6</property>
     <property name="row_spacing">6</property>
@@ -54,8 +54,8 @@
         <property name="label" translatable="yes">Show Tooltip:</property>
       </object>
       <packing>
-        <property name="top_attach">2</property>
-        <property name="bottom_attach">3</property>
+        <property name="top_attach">3</property>
+        <property name="bottom_attach">4</property>
         <property name="x_options">GTK_FILL</property>
         <property name="y_options">GTK_FILL</property>
       </packing>
@@ -69,8 +69,8 @@
         <property name="label" translatable="yes">Double Buffered:</property>
       </object>
       <packing>
-        <property name="top_attach">4</property>
-        <property name="bottom_attach">5</property>
+        <property name="top_attach">5</property>
+        <property name="bottom_attach">6</property>
         <property name="x_options">GTK_FILL</property>
         <property name="y_options">GTK_FILL</property>
       </packing>
@@ -117,8 +117,8 @@
       <packing>
         <property name="left_attach">1</property>
         <property name="right_attach">2</property>
-        <property name="top_attach">4</property>
-        <property name="bottom_attach">5</property>
+        <property name="top_attach">5</property>
+        <property name="bottom_attach">6</property>
         <property name="x_options">GTK_FILL</property>
       </packing>
     </child>
@@ -164,8 +164,8 @@
       <packing>
         <property name="left_attach">1</property>
         <property name="right_attach">2</property>
-        <property name="top_attach">2</property>
-        <property name="bottom_attach">3</property>
+        <property name="top_attach">3</property>
+        <property name="bottom_attach">4</property>
         <property name="x_options">GTK_FILL</property>
       </packing>
     </child>
@@ -197,8 +197,8 @@
         <property name="label" translatable="yes">Scroll Lines:</property>
       </object>
       <packing>
-        <property name="top_attach">5</property>
-        <property name="bottom_attach">6</property>
+        <property name="top_attach">6</property>
+        <property name="bottom_attach">7</property>
         <property name="x_options">GTK_FILL</property>
         <property name="y_options">GTK_FILL</property>
       </packing>
@@ -218,8 +218,8 @@
       <packing>
         <property name="left_attach">1</property>
         <property name="right_attach">2</property>
-        <property name="top_attach">5</property>
-        <property name="bottom_attach">6</property>
+        <property name="top_attach">6</property>
+        <property name="bottom_attach">7</property>
       </packing>
     </child>
     <child>
@@ -301,6 +301,8 @@
                     <property name="right_attach">2</property>
                     <property name="top_attach">3</property>
                     <property name="bottom_attach">4</property>
+                    <property name="x_options">GTK_FILL</property>
+                    <property name="y_options">GTK_FILL</property>
                   </packing>
                 </child>
                 <child>
@@ -318,6 +320,8 @@
                     <property name="right_attach">2</property>
                     <property name="top_attach">2</property>
                     <property name="bottom_attach">3</property>
+                    <property name="x_options">GTK_FILL</property>
+                    <property name="y_options">GTK_FILL</property>
                   </packing>
                 </child>
                 <child>
@@ -368,7 +372,7 @@
                   <object class="GtkLabel" id="overview-overlay-inverted-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Whether to draw an overlay ontop of the overview sidebar with a revealed area showing the visible area in the main editor.</property>
+                    <property name="tooltip_text" translatable="yes">Whether to draw an overlay over the visible area of the document (Inverted=Yes), or draw the overlay everywhere except the visible area (Inverted=No).</property>
                     <property name="xalign">0</property>
                     <property name="label" translatable="yes">Inverted:</property>
                   </object>
@@ -390,7 +394,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="tooltip_text" translatable="yes">Whether to draw an overlay ontop of the overview sidebar with a revealed area showing the visible area in the main editor.</property>
+                        <property name="tooltip_text" translatable="yes">Whether to draw an overlay over the visible area of the document (Inverted=Yes), or draw the overlay everywhere except the visible area (Inverted=No).</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
                       </object>
@@ -406,7 +410,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="tooltip_text" translatable="yes">Whether to draw an overlay ontop of the overview sidebar with a revealed area showing the visible area in the main editor.</property>
+                        <property name="tooltip_text" translatable="yes">Whether to draw an overlay over the visible area of the document (Inverted=Yes), or draw the overlay everywhere except the visible area (Inverted=No).</property>
                         <property name="draw_indicator">True</property>
                         <property name="group">overview-overlay-inverted-yes-check</property>
                       </object>
@@ -440,8 +444,8 @@
       </object>
       <packing>
         <property name="right_attach">2</property>
-        <property name="top_attach">6</property>
-        <property name="bottom_attach">7</property>
+        <property name="top_attach">7</property>
+        <property name="bottom_attach">8</property>
       </packing>
     </child>
     <child>
@@ -515,8 +519,8 @@
       <packing>
         <property name="left_attach">1</property>
         <property name="right_attach">2</property>
-        <property name="top_attach">3</property>
-        <property name="bottom_attach">4</property>
+        <property name="top_attach">4</property>
+        <property name="bottom_attach">5</property>
         <property name="x_options">GTK_FILL</property>
       </packing>
     </child>
@@ -529,10 +533,71 @@
         <property name="label" translatable="yes">Show Scrollbar:</property>
       </object>
       <packing>
-        <property name="top_attach">3</property>
-        <property name="bottom_attach">4</property>
+        <property name="top_attach">4</property>
+        <property name="bottom_attach">5</property>
         <property name="x_options">GTK_FILL</property>
         <property name="y_options">GTK_FILL</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel" id="overview-position-label">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
+        <property name="xalign">0</property>
+        <property name="label" translatable="yes">Position:</property>
+      </object>
+      <packing>
+        <property name="top_attach">2</property>
+        <property name="bottom_attach">3</property>
+        <property name="x_options">GTK_FILL</property>
+        <property name="y_options">GTK_FILL</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkHBox" id="overview-position-hbox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkRadioButton" id="overview-position-left-check">
+            <property name="label" translatable="yes">Left</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkRadioButton" id="overview-position-right-check">
+            <property name="label" translatable="yes">Right</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="tooltip_text" translatable="yes">Whether to show the overview to the Left or Right of the main editor view.</property>
+            <property name="active">True</property>
+            <property name="draw_indicator">True</property>
+            <property name="group">overview-position-left-check</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="right_attach">2</property>
+        <property name="top_attach">2</property>
+        <property name="bottom_attach">3</property>
+        <property name="x_options">GTK_FILL</property>
       </packing>
     </child>
   </object>

@@ -39,23 +39,24 @@ enum
   PROP_OVERLAY_COLOR,
   PROP_OVERLAY_OUTLINE_COLOR,
   PROP_OVERLAY_INVERTED,
+  PROP_POSITION,
   N_PROPERTIES
 };
 
 struct OverviewPrefs_
 {
-  GObject  parent;
-
-  guint         width;
-  gint          zoom;
-  gboolean      show_tt;
-  gboolean      show_sb;
-  gboolean      dbl_buf;
-  gint          scr_lines;
-  gboolean      ovl_en;
-  OverviewColor ovl_clr;
-  OverviewColor out_clr;
-  gboolean      ovl_inv;
+  GObject         parent;
+  guint           width;
+  gint            zoom;
+  gboolean        show_tt;
+  gboolean        show_sb;
+  gboolean        dbl_buf;
+  gint            scr_lines;
+  gboolean        ovl_en;
+  OverviewColor   ovl_clr;
+  OverviewColor   out_clr;
+  gboolean        ovl_inv;
+  GtkPositionType position;
 };
 
 struct OverviewPrefsClass_
@@ -99,6 +100,7 @@ overview_prefs_class_init (OverviewPrefsClass *klass)
   pspecs[PROP_OVERLAY_COLOR] = g_param_spec_boxed ("overlay-color", "OverlayColor", "The color of the overlay", OVERVIEW_TYPE_COLOR, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
   pspecs[PROP_OVERLAY_OUTLINE_COLOR] = g_param_spec_boxed ("overlay-outline-color", "OverlayOutlineColor", "The color of the outlines drawn around the overlay", OVERVIEW_TYPE_COLOR, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
   pspecs[PROP_OVERLAY_INVERTED] = g_param_spec_boolean ("overlay-inverted", "OverlayInverted", "Whether to invert the drawing of the overlay", TRUE, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+  pspecs[PROP_POSITION] = g_param_spec_enum ("position", "Position", "Where to draw the overview", GTK_TYPE_POSITION_TYPE, GTK_POS_RIGHT, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
   g_object_class_install_properties (g_object_class, N_PROPERTIES, pspecs);
 }
@@ -173,6 +175,10 @@ overview_prefs_set_property (GObject      *object,
       self->ovl_inv = g_value_get_boolean (value);
       g_object_notify (G_OBJECT (self), "overlay-inverted");
       break;
+    case PROP_POSITION:
+      self->position = g_value_get_enum (value);
+      g_object_notify (G_OBJECT (self), "position");
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -219,6 +225,9 @@ overview_prefs_get_property (GObject      *object,
     case PROP_OVERLAY_INVERTED:
       g_value_set_boolean (value, self->ovl_inv);
       break;
+    case PROP_POSITION:
+      g_value_set_enum (value, self->position);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -228,6 +237,7 @@ overview_prefs_get_property (GObject      *object,
 static void
 overview_prefs_init (OverviewPrefs *self)
 {
+  self->position = GTK_POS_RIGHT;
 }
 
 
@@ -297,6 +307,7 @@ overview_prefs_from_data (OverviewPrefs *self,
                           GError       **error)
 {
   GKeyFile *kf;
+  gchar    *pos;
 
   g_return_val_if_fail (OVERVIEW_IS_PREFS (self), FALSE);
   g_return_val_if_fail (contents != NULL, FALSE);
@@ -320,6 +331,20 @@ overview_prefs_from_data (OverviewPrefs *self,
   GET (uint64,  "scroll-lines",     self->scr_lines);
   GET (boolean, "overlay-enabled",  self->ovl_en);
   GET (boolean, "overlay-inverted", self->ovl_inv);
+
+  pos = g_key_file_get_string (kf, "overview", "position", error);
+  if (error != NULL && *error != NULL)
+    return FALSE;
+  if (g_ascii_strcasecmp (pos, "right") == 0)
+    self->position = GTK_POS_RIGHT;
+  else if (g_ascii_strcasecmp (pos, "left") == 0)
+    self->position = GTK_POS_LEFT;
+  else
+    {
+      g_warning ("unknown value '%s' for 'position' key", pos);
+      self->position = GTK_POS_RIGHT;
+    }
+  g_free (pos);
 
   if (! overview_color_from_keyfile (&self->ovl_clr, kf, "overview", "overlay", error))
     {
@@ -362,6 +387,9 @@ overview_prefs_to_data (OverviewPrefs *self,
   SET (uint64,  "scroll-lines",     self->scr_lines);
   SET (boolean, "overlay-enabled",  self->ovl_en);
   SET (boolean, "overlay-inverted", self->ovl_inv);
+
+  g_key_file_set_string (kf, "overview", "position",
+                         self->position == GTK_POS_LEFT ? "left" : "right");
 
   overview_color_to_keyfile (&self->ovl_clr, kf, "overview", "overlay");
   overview_color_to_keyfile (&self->out_clr, kf, "overview", "overlay-outline");
