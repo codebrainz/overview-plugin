@@ -1,7 +1,7 @@
 screenshotdir = $(docdir)/screenshots
-screenshot_DATA = \
-	$(top_srcdir)/screenshots/screenshot-dark.png \
-	$(top_srcdir)/screenshots/screenshot-keybindings.png \
-	$(top_srcdir)/screenshots/screenshot-light.png \
-	$(top_srcdir)/screenshots/screenshot-prefs.png \
-	$(top_srcdir)/screenshots/screenshot-view-menu.png
+dist_screenshot_DATA = \
+	screenshot-dark.png \
+	screenshot-keybindings.png \
+	screenshot-light.png \
+	screenshot-prefs.png \
+	screenshot-view-menu.png

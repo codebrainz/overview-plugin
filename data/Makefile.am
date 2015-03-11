@@ -1,1 +1,1 @@
-pkgdata_DATA = $(top_srcdir)/data/prefs.ui
+dist_pkgdata_DATA = prefs.ui
