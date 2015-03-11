@@ -1,4 +1,31 @@
-/misc/
-*.o
+# Generic built files
+*.[ao]
 *.so
-/Makefile.deps
+*.dll
+*.lib
+*.dylib
+
+# Autotools stuff
+*.lo
+*.la
+.deps/
+.libs/
+Makefile
+Makefile.in
+/aclocal.m4
+/ar-lib
+/autom4te.cache/
+/build-aux/
+/compile
+/config.*
+/configure
+/depcomp
+/install-sh
+/libtool
+/ltmain.sh
+/m4/
+/missing
+/stamp-*
+
+# Project-specific stuff
+/index.html

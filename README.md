@@ -13,28 +13,28 @@ and the regular scrollbar is not shown. The optional tooltip can be seen
 (partially cut-off) in the screenshot also. It shows the line, column and
 offset information of the location of the mouse cursor.
 
-![Overview plugin screenshot with light theme](screenshot-light.png?raw=true)
+![Overview plugin screenshot with light theme](screenshots/screenshot-light.png?raw=true)
 
 This screenshot shows with a dark theme, the overview's overlay is not
 inverted, and the regular scrollbar is shown.
 
-![Overview plugin screenshot with dark theme](screenshot-dark.png?raw=true)
+![Overview plugin screenshot with dark theme](screenshots/screenshot-dark.png?raw=true)
 
 This screenshot shows the preferences dialog, with the options that can be
 configured, saved and restored. Helpful mouse-over tooltips are provided to
 give a quick explanation of each preference.
 
-![Overview plugin's preferences GUI](screenshot-prefs.png?raw=true)
+![Overview plugin's preferences GUI](screenshots/screenshot-prefs.png?raw=true)
 
 This screenshot shows the available keybindings which can be configured
 through Geany's Preferences dialog from the `Edit->Preferences` menu item.
 
-![Keybindings preferences](screenshot-keybindings.png?raw=true)
+![Keybindings preferences](screenshots/screenshot-keybindings.png?raw=true)
 
 This screenshot shows how the Overview can be shown/hidden by using Geany's
 `View` menu.
 
-![Showing and Hiding from the main menu](screenshot-view-menu.png?raw=true)
+![Showing and Hiding from the main menu](screenshots/screenshot-view-menu.png?raw=true)
 
 Installing
 ----------
