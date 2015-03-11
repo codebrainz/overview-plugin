@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 typedef struct OverviewPrefsPanel_      OverviewPrefsPanel;
 typedef struct OverviewPrefsPanelClass_ OverviewPrefsPanelClass;
 
-GType      overview_prefs_panel_get_type (void);
+GType      overview_prefs_panel_get_type (void) G_GNUC_CONST;
 GtkWidget *overview_prefs_panel_new      (OverviewPrefs *prefs,
                                           GtkDialog     *host_dialog);
 

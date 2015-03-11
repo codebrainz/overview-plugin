@@ -37,7 +37,7 @@ G_BEGIN_DECLS
 typedef struct OverviewPrefs_      OverviewPrefs;
 typedef struct OverviewPrefsClass_ OverviewPrefsClass;
 
-GType          overview_prefs_get_type       (void);
+GType          overview_prefs_get_type       (void) G_GNUC_CONST;
 OverviewPrefs *overview_prefs_new            (void);
 gboolean       overview_prefs_load           (OverviewPrefs *prefs,
                                               const gchar   *filename,

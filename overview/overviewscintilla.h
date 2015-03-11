@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 typedef struct OverviewScintilla_        OverviewScintilla;
 typedef struct OverviewScintillaClass_   OverviewScintillaClass;
 
-GType         overview_scintilla_get_type                  (void);
+GType         overview_scintilla_get_type                  (void) G_GNUC_CONST;
 GtkWidget    *overview_scintilla_new                       (ScintillaObject     *src_sci);
 void          overview_scintilla_queue_draw                (OverviewScintilla   *sci);
 GdkCursorType overview_scintilla_get_cursor                (OverviewScintilla   *sci);

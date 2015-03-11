@@ -37,7 +37,7 @@ typedef struct
 }
 OverviewColor;
 
-GType          overview_color_get_type       (void);
+GType          overview_color_get_type       (void) G_GNUC_CONST;
 OverviewColor *overview_color_copy           (OverviewColor       *color);
 void           overview_color_free           (OverviewColor       *color);
 gboolean       overview_color_equal          (const OverviewColor *color1,
