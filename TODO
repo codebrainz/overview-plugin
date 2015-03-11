@@ -1,7 +1,5 @@
 TODO:
     - handle line-wrapping mode
     - configurable cursor for normal and scrolling
-    - disconnect all signals on main scintilla in mini scintilla desctructor
-      to avoid callbacks into plugin after unloading (or use plugin_signal_connect)
     - apply `geanyscihunting.patch` to Geany, it's needed to support putting
       the overview scintilla on the left.
