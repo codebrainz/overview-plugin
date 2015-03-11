@@ -8,3 +8,5 @@ index.html: $(top_srcdir)/README.md
 	$(AM_V_GEN)$(MARKDOWN) $(top_srcdir)/README.md > $@
 CLEANFILES = index.html
 endif
+
+DISTCHECK_CONFIGURE_FLAGS = --with-geany-libdir='$${libdir}/geany'

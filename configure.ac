@@ -11,9 +11,13 @@ LT_INIT([disable-static])
 AC_PROG_CC_C99
 
 PKG_CHECK_MODULES([GEANY], [geany])
-geany_libdir=`$PKG_CONFIG --variable=libdir geany`
-geany_plugindir="$geany_libdir/geany"
-AC_SUBST([GEANY_PLUGINDIR], [$geany_plugindir])
+AC_ARG_WITH([geany-libdir],
+            [AS_HELP_STRING([--with-geany-libdir=DIR],
+                            [Install the plugin library in DIR])],
+            [],
+            [geany_libdir=`$PKG_CONFIG --variable=libdir geany`
+             with_geany_libdir="$geany_libdir/geany"])
+AC_SUBST([GEANY_PLUGINDIR], [$with_geany_libdir])
 
 AC_PATH_PROG([MARKDOWN], [markdown])
 AM_CONDITIONAL([WITH_MARKDOWN], [test "x$MARKDOWN" != "x"])
