@@ -127,7 +127,7 @@ overview_color_from_rgba (OverviewColor *color,
   color->red   = rgba->red;
   color->green = rgba->green;
   color->blue  = rgba->blue;
-  color->alpha = rgba->value;
+  color->alpha = rgba->alpha;
 }
 
 void
