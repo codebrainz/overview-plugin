@@ -18,4 +18,5 @@ overview_la_SOURCES = \
 	overviewscintilla.c \
 	overviewscintilla.h
 
-overview_la_LDFLAGS = -module -avoid-version $(GEANY_LIBS)
+overview_la_LDFLAGS = -module -avoid-version
+overview_la_LIBADD = $(GEANY_LIBS)
