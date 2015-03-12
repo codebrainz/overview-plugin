@@ -44,6 +44,16 @@ static GtkWidget       *overview_menu_item = NULL;
 
 static void write_config (void);
 
+static inline void
+container_add_expanded (GtkContainer *container,
+                        GtkWidget    *widget)
+{
+  gtk_container_add (container, widget);
+#if GTK_CHECK_VERSION (3, 0, 0)
+  g_object_set (widget, "expand", TRUE, NULL);
+#endif
+}
+
 static GtkWidget *
 hijack_scintilla (GeanyDocument  *doc,
                   GtkPositionType pos)
@@ -68,7 +78,7 @@ hijack_scintilla (GeanyDocument  *doc,
       gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
       gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
     }
-  gtk_container_add (GTK_CONTAINER (parent), cont);
+  container_add_expanded (GTK_CONTAINER (parent), cont);
 
   g_object_set_data (G_OBJECT (sci), "overview", overview);
 
@@ -97,7 +107,7 @@ restore_scintilla (GeanyDocument *doc)
       g_object_ref (sci);
       gtk_container_remove (GTK_CONTAINER (cont), sci);
       gtk_container_remove (GTK_CONTAINER (parent), cont);
-      gtk_container_add (GTK_CONTAINER (parent), sci);
+      container_add_expanded (GTK_CONTAINER (parent), sci);
       g_object_unref (sci);
     }
 }
