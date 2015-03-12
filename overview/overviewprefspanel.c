@@ -35,12 +35,8 @@ struct OverviewPrefsPanel_
   GtkWidget     *dbl_buf_yes;
   GtkWidget     *scr_lines_spin;
   GtkWidget     *ovl_en_yes;
-  GtkWidget     *ovl_clr_lbl;
   GtkWidget     *ovl_clr_btn;
-  GtkWidget     *out_clr_lbl;
   GtkWidget     *out_clr_btn;
-  GtkWidget     *ovl_inv_lbl;
-  GtkWidget     *ovl_inv_hbox;
   GtkWidget     *ovl_inv_yes;
   GtkWidget     *pos_left_check;
 };
@@ -117,92 +113,90 @@ builder_get_widget (GtkBuilder  *builder,
 static void
 overview_prefs_panel_store_prefs (OverviewPrefsPanel *self)
 {
-  guint         uval;
-  gint          ival;
-  OverviewColor cval;
-  gboolean      bval;
+  gint          zoom      = 0;
+  guint         width     = 0;
+  guint         scr_lines = 0;
+  gboolean      show_tt   = FALSE;
+  gboolean      show_sb   = FALSE;
+  gboolean      dbl_buf   = FALSE;
+  gboolean      pos_left  = FALSE;
+  gboolean      ovl_en    = FALSE;
+  gboolean      ovl_inv   = FALSE;
+  OverviewColor ovl_clr   = {0,0,0,0};
+  OverviewColor out_clr   = {0,0,0,0};
 
-  uval = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->width_spin));
-  g_object_set (self->prefs, "width", uval, NULL);
-  ival = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->zoom_spin));
-  g_object_set (self->prefs, "zoom", ival, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_tt_yes));
-  g_object_set (self->prefs, "show-tooltip", bval, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_sb_yes));
-  g_object_set (self->prefs, "show-scrollbar", bval, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->dbl_buf_yes));
-  g_object_set (self->prefs, "double-buffered", bval, NULL);
-  uval = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->scr_lines_spin));
-  g_object_set (self->prefs, "scroll-lines", uval, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes));
-  g_object_set (self->prefs, "overlay-enabled", bval, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes));
-  g_object_set (self->prefs, "overlay-inverted", bval, NULL);
-  overview_color_from_color_button (&cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
-  g_object_set (self->prefs, "overlay-color", &cval, NULL);
-  overview_color_from_color_button (&cval, GTK_COLOR_BUTTON (self->out_clr_btn));
-  g_object_set (self->prefs, "overlay-outline-color", &cval, NULL);
-  bval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->pos_left_check));
-  g_object_set (self->prefs, "position", bval ? GTK_POS_LEFT : GTK_POS_RIGHT, NULL);
+  width     = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->width_spin));
+  zoom      = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->zoom_spin));
+  scr_lines = gtk_spin_button_get_value (GTK_SPIN_BUTTON (self->scr_lines_spin));
+  show_tt   = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_tt_yes));
+  show_sb   = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_sb_yes));
+  dbl_buf   = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->dbl_buf_yes));
+  ovl_en    = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes));
+  ovl_inv   = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes));
+  pos_left  = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->pos_left_check));
+  overview_color_from_color_button (&ovl_clr, GTK_COLOR_BUTTON (self->ovl_clr_btn));
+  overview_color_from_color_button (&out_clr, GTK_COLOR_BUTTON (self->out_clr_btn));
+
+  g_object_set (self->prefs,
+                "width", width,
+                "zoom", zoom,
+                "show-tooltip", show_tt,
+                "show-scrollbar", show_sb,
+                "double-buffered", dbl_buf,
+                "scroll-lines", scr_lines,
+                "position", pos_left ? GTK_POS_LEFT : GTK_POS_RIGHT,
+                "overlay-enabled", ovl_en,
+                "overlay-inverted", ovl_inv,
+                "overlay-color", &ovl_clr,
+                "overlay-outline-color", &out_clr,
+                NULL);
 
   g_signal_emit_by_name (self, "prefs-stored", self->prefs);
 }
 
 static void
-on_overlay_enable_toggled (GtkToggleButton    *button,
-                           OverviewPrefsPanel *self)
-{
-  gboolean active;
-  active = gtk_toggle_button_get_active (button);
-  gtk_widget_set_sensitive (self->ovl_clr_lbl, active);
-  gtk_widget_set_sensitive (self->ovl_clr_btn, active);
-  gtk_widget_set_sensitive (self->out_clr_lbl, active);
-  gtk_widget_set_sensitive (self->out_clr_btn, active);
-  gtk_widget_set_sensitive (self->ovl_inv_lbl, active);
-  gtk_widget_set_sensitive (self->ovl_inv_hbox, active);
-}
-
-static void
 overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
 {
-  guint          uval;
-  gint           ival;
-  OverviewColor *cval = NULL;
-  gboolean       bval;
+  gint            zoom      = 0;
+  guint           width     = 0;
+  guint           scr_lines = 0;
+  gboolean        show_tt   = FALSE;
+  gboolean        show_sb   = FALSE;
+  gboolean        dbl_buf   = FALSE;
+  gboolean        ovl_en    = FALSE;
+  gboolean        ovl_inv   = FALSE;
+  GtkPositionType pos       = FALSE;
+  OverviewColor  *ovl_clr   = NULL;
+  OverviewColor  *out_clr   = NULL;
 
-  g_object_get (self->prefs, "width", &uval, NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->width_spin), uval);
-  g_object_get (self->prefs, "zoom", &ival, NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->zoom_spin), ival);
-  g_object_get (self->prefs, "show-tooltip", &bval, NULL);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_tt_yes), bval);
-  g_object_get (self->prefs, "show-scrollbar", &bval, NULL);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_sb_yes), bval);
-  g_object_get (self->prefs, "double-buffered", &bval, NULL);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->dbl_buf_yes), bval);
-  g_object_get (self->prefs, "scroll-lines", &uval, NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->scr_lines_spin), uval);
-  g_object_get (self->prefs, "overlay-enabled", &bval, NULL);
-  g_object_freeze_notify (G_OBJECT (self->ovl_en_yes));
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes), bval);
-  g_object_thaw_notify (G_OBJECT (self->ovl_en_yes));
-  gtk_widget_set_sensitive (self->ovl_clr_lbl, bval);
-  gtk_widget_set_sensitive (self->ovl_clr_btn, bval);
-  gtk_widget_set_sensitive (self->out_clr_lbl, bval);
-  gtk_widget_set_sensitive (self->out_clr_btn, bval);
-  gtk_widget_set_sensitive (self->ovl_inv_lbl, bval);
-  gtk_widget_set_sensitive (self->ovl_inv_hbox, bval);
-  g_object_get (self->prefs, "overlay-color", &cval, NULL);
-  overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->ovl_clr_btn));
-  overview_color_free (cval);
-  cval = NULL;
-  g_object_get (self->prefs, "overlay-outline-color", &cval, NULL);
-  overview_color_to_color_button (cval, GTK_COLOR_BUTTON (self->out_clr_btn));
-  overview_color_free (cval);
-  g_object_get (self->prefs, "overlay-inverted", &bval, NULL);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes), bval);
-  g_object_get (self->prefs, "position", &ival, NULL);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->pos_left_check), ival == GTK_POS_LEFT);
+  g_object_get (self->prefs,
+                "width", &width,
+                "zoom", &zoom,
+                "show-tooltip", &show_tt,
+                "show-scrollbar", &show_sb,
+                "double-buffered", &dbl_buf,
+                "scroll-lines", &scr_lines,
+                "position", &pos,
+                "overlay-enabled", &ovl_en,
+                "overlay-inverted", &ovl_inv,
+                "overaly-color", &ovl_clr,
+                "overlay-outline-color", &out_clr,
+                NULL);
+
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->width_spin), width);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->zoom_spin), zoom);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_tt_yes), show_tt);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_sb_yes), show_sb);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->dbl_buf_yes), dbl_buf);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (self->scr_lines_spin), scr_lines);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->pos_left_check), pos == GTK_POS_LEFT);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_inv_yes), ovl_inv);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->ovl_en_yes), ovl_en);
+  overview_color_to_color_button (ovl_clr, GTK_COLOR_BUTTON (self->ovl_clr_btn));
+  overview_color_to_color_button (out_clr, GTK_COLOR_BUTTON (self->out_clr_btn));
+
+  overview_color_free (ovl_clr);
+  overview_color_free (out_clr);
 
   g_signal_emit_by_name (self, "prefs-loaded", self->prefs);
 }
@@ -212,6 +206,10 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
 {
   GtkBuilder *builder;
   GError     *error = NULL;
+  GtkWidget  *ovl_clr_lbl;
+  GtkWidget  *out_clr_lbl;
+  GtkWidget  *ovl_inv_lbl;
+  GtkWidget  *ovl_inv_hbox;
 
   builder = gtk_builder_new ();
   if (! gtk_builder_add_from_file (builder, OVERVIEW_PREFS_UI_FILE, &error))
@@ -222,7 +220,7 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
       return;
     }
 
-  self->prefs_table    = g_object_ref (builder_get_widget (builder, "prefs-table"));
+  self->prefs_table    = builder_get_widget (builder, "prefs-table");
   self->width_spin     = builder_get_widget (builder, "width-spin");
   self->zoom_spin      = builder_get_widget (builder, "zoom-spin");
   self->show_tt_yes    = builder_get_widget (builder, "show-tooltip-yes-check");
@@ -230,22 +228,24 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   self->dbl_buf_yes    = builder_get_widget (builder, "double-buffered-yes-check");
   self->scr_lines_spin = builder_get_widget (builder, "scroll-lines-spin");
   self->ovl_en_yes     = builder_get_widget (builder, "overlay-enabled-yes-check");
-  self->ovl_clr_lbl    = builder_get_widget (builder, "overlay-color-label");
   self->ovl_clr_btn    = builder_get_widget (builder, "overlay-color");
-  self->out_clr_lbl    = builder_get_widget (builder, "overlay-outline-label");
   self->out_clr_btn    = builder_get_widget (builder, "overlay-outline-color");
-  self->ovl_inv_lbl    = builder_get_widget (builder, "overlay-inverted-label");
-  self->ovl_inv_hbox   = builder_get_widget (builder, "overlay-inverted-hbox");
   self->ovl_inv_yes    = builder_get_widget (builder, "overlay-inverted-yes-check");
   self->pos_left_check = builder_get_widget (builder, "position-left-check");
 
-  g_object_unref (builder);
+  ovl_clr_lbl  = builder_get_widget (builder, "overlay-color-label");
+  out_clr_lbl  = builder_get_widget (builder, "overlay-outline-label");
+  ovl_inv_lbl  = builder_get_widget (builder, "overlay-inverted-label");
+  ovl_inv_hbox = builder_get_widget (builder, "overlay-inverted-hbox");
+
+  g_object_bind_property (self->ovl_en_yes, "active", ovl_clr_lbl, "sensitive", G_BINDING_SYNC_CREATE);
+  g_object_bind_property (self->ovl_en_yes, "active", out_clr_lbl, "sensitive", G_BINDING_SYNC_CREATE);
+  g_object_bind_property (self->ovl_en_yes, "active", ovl_inv_lbl, "sensitive", G_BINDING_SYNC_CREATE);
+  g_object_bind_property (self->ovl_en_yes, "active", ovl_inv_hbox, "sensitive", G_BINDING_SYNC_CREATE);
 
   gtk_widget_show_all (self->prefs_table);
   gtk_container_add (GTK_CONTAINER (self), self->prefs_table);
-  g_object_unref (self->prefs_table);
-
-  g_signal_connect (self->ovl_en_yes, "toggled", G_CALLBACK (on_overlay_enable_toggled), self);
+  g_object_unref (builder);
 }
 
 static void
