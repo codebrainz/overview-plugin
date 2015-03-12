@@ -829,51 +829,17 @@ overview_scintilla_new (ScintillaObject *src_sci)
   return g_object_new (OVERVIEW_TYPE_SCINTILLA, "scintilla", src_sci, NULL);
 }
 
-void
-overview_scintilla_queue_draw (OverviewScintilla *self)
-{
-  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
-  if (GTK_IS_WIDGET (self->canvas))
-    gtk_widget_queue_draw (self->canvas);
-  else
-    gtk_widget_queue_draw (GTK_WIDGET (self));
-}
-
 static gchar *
 sci_get_font (ScintillaObject *sci,
               gint             style)
 {
-  gsize  len = sci_send (sci, STYLEGETFONT, style, 0);
-  gchar *name = g_malloc0 (len + 1);
+  gsize  len   = sci_send (sci, STYLEGETFONT, style, 0);
+  gchar *name  = g_malloc0 (len + 1);
+  gchar *pname = NULL;
   sci_send (sci, STYLEGETFONT, style, name);
-  return name;
-}
-
-static void
-overview_scintilla_clone_styles (OverviewScintilla *self)
-{
-  ScintillaObject *sci     = SCINTILLA (self);
-  ScintillaObject *src_sci = self->sci;
-
-  for (gint i = 0; i < STYLE_MAX; i++)
-    {
-      gchar   *font_name = sci_get_font (src_sci, i);
-      gint     font_size = sci_send (src_sci, STYLEGETSIZE, i, 0);
-      gint     weight    = sci_send (src_sci, STYLEGETWEIGHT, i, 0);
-      gboolean italic    = sci_send (src_sci, STYLEGETITALIC, i, 0);
-      gint     fg_color  = sci_send (src_sci, STYLEGETFORE, i, 0);
-      gint     bg_color  = sci_send (src_sci, STYLEGETBACK, i, 0);
-
-      sci_send (sci, STYLESETFONT, i, font_name);
-      sci_send (sci, STYLESETSIZE, i, font_size);
-      sci_send (sci, STYLESETWEIGHT, i, weight);
-      sci_send (sci, STYLESETITALIC, i, italic);
-      sci_send (sci, STYLESETFORE, i, fg_color);
-      sci_send (sci, STYLESETBACK, i, bg_color);
-      sci_send (sci, STYLESETCHANGEABLE, i, 0);
-
-      g_free (font_name);
-    }
+  pname = g_strdup_printf ("!%s", name);
+  g_free (name);
+  return pname;
 }
 
 static gboolean
@@ -921,64 +887,106 @@ on_src_sci_notify (ScintillaObject   *sci,
 }
 
 static void
-overview_scintilla_update_sci (OverviewScintilla *self)
+overview_scintilla_clone_styles (OverviewScintilla *self)
 {
-  ScintillaObject *src_sci = self->sci;
   ScintillaObject *sci     = SCINTILLA (self);
-  sptr_t           doc_ptr;
+  ScintillaObject *src_sci = self->sci;
 
-  doc_ptr = sci_send (src_sci, GETDOCPOINTER, 0, 0);
-  sci_send (sci, SETDOCPOINTER, 0, doc_ptr);
+  for (gint i = 0; i < STYLE_MAX; i++)
+    {
+      gchar   *font_name = sci_get_font (src_sci, i);
+      gint     font_size = sci_send (src_sci, STYLEGETSIZE, i, 0);
+      gint     weight    = sci_send (src_sci, STYLEGETWEIGHT, i, 0);
+      gboolean italic    = sci_send (src_sci, STYLEGETITALIC, i, 0);
+      gint     fg_color  = sci_send (src_sci, STYLEGETFORE, i, 0);
+      gint     bg_color  = sci_send (src_sci, STYLEGETBACK, i, 0);
+
+      sci_send (sci, STYLESETFONT, i, font_name);
+      sci_send (sci, STYLESETSIZE, i, font_size);
+      sci_send (sci, STYLESETWEIGHT, i, weight);
+      sci_send (sci, STYLESETITALIC, i, italic);
+      sci_send (sci, STYLESETFORE, i, fg_color);
+      sci_send (sci, STYLESETBACK, i, bg_color);
+      sci_send (sci, STYLESETCHANGEABLE, i, 0);
+
+      g_free (font_name);
+    }
+}
+
+static void
+overview_scintilla_queue_draw (OverviewScintilla *self)
+{
+  if (GTK_IS_WIDGET (self->canvas))
+    gtk_widget_queue_draw (self->canvas);
+  else
+    gtk_widget_queue_draw (GTK_WIDGET (self));
+}
+
+void
+overview_scintilla_sync (OverviewScintilla *self)
+{
+  sptr_t doc_ptr;
+
+  g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
+
+  doc_ptr = sci_send (self->sci, GETDOCPOINTER, 0, 0);
+  sci_send (self, SETDOCPOINTER, 0, doc_ptr);
 
   overview_scintilla_clone_styles (self);
 
   for (gint i = 0; i < SC_MAX_MARGIN; i++)
-    sci_send (sci, SETMARGINWIDTHN, i, 0);
+    sci_send (self, SETMARGINWIDTHN, i, 0);
 
-  sci_send (sci, SETVIEWEOL, 0, 0);
-  sci_send (sci, SETVIEWWS, 0, 0);
-  sci_send (sci, SETHSCROLLBAR, 0, 0);
-  sci_send (sci, SETVSCROLLBAR, 0, 0);
-  sci_send (sci, SETZOOM, self->zoom, 0);
-  sci_send (sci, SETCURSOR, SC_CURSORARROW, 0);
-  sci_send (sci, SETENDATLASTLINE, sci_send (src_sci, GETENDATLASTLINE, 0, 0), 0);
-  sci_send (sci, SETMOUSEDOWNCAPTURES, 0, 0);
-  sci_send (sci, SETCARETPERIOD, 0, 0);
-  sci_send (sci, SETCARETWIDTH, 0, 0);
-  sci_send (sci, SETEXTRAASCENT, 0, 0);
-  sci_send (sci, SETEXTRADESCENT, 0, 0);
+  sci_send (self, SETVIEWEOL, 0, 0);
+  sci_send (self, SETVIEWWS, 0, 0);
+  sci_send (self, SETHSCROLLBAR, 0, 0);
+  sci_send (self, SETVSCROLLBAR, 0, 0);
+  sci_send (self, SETZOOM, self->zoom, 0);
+  sci_send (self, SETCURSOR, SC_CURSORARROW, 0);
+  sci_send (self, SETENDATLASTLINE, sci_send (self->sci, GETENDATLASTLINE, 0, 0), 0);
+  sci_send (self, SETMOUSEDOWNCAPTURES, 0, 0);
+  sci_send (self, SETCARETPERIOD, 0, 0);
+  sci_send (self, SETCARETWIDTH, 0, 0);
+  sci_send (self, SETEXTRAASCENT, 0, 0);
+  sci_send (self, SETEXTRADESCENT, 0, 0);
+
+  sci_send (self->sci, SETVSCROLLBAR, self->show_scrollbar, 0);
 
   overview_scintilla_update_cursor (self);
+  overview_scintilla_update_rect (self);
+  overview_scintilla_sync_center (self);
 
-  gtk_widget_add_events (GTK_WIDGET (src_sci), GDK_STRUCTURE_MASK);
-  plugin_signal_connect (geany_plugin,
-                         G_OBJECT (src_sci),
-                         "map-event",
-                         TRUE,
-                         G_CALLBACK (on_src_sci_map_event),
-                         self);
-  plugin_signal_connect (geany_plugin,
-                         G_OBJECT (src_sci),
-                         "sci-notify",
-                         TRUE,
-                         G_CALLBACK (on_src_sci_notify),
-                         self);
-
-  sci_send (src_sci, SETVSCROLLBAR, self->show_scrollbar, 0);
+  overview_scintilla_queue_draw (self);
 }
 
 static void
 overview_scintilla_set_src_sci (OverviewScintilla *self,
                                 ScintillaObject   *sci)
 {
-  if (sci != self->sci)
-    {
-      if (IS_SCINTILLA (self->sci))
-        g_object_unref (self->sci);
-      self->sci = g_object_ref (sci);
-      overview_scintilla_update_sci (self);
-      g_object_notify (G_OBJECT (self), "scintilla");
-    }
+
+  g_assert (! IS_SCINTILLA (self->sci));
+
+  self->sci = g_object_ref (sci);
+
+  overview_scintilla_sync (self);
+  sci_send (self->sci, SETVSCROLLBAR, self->show_scrollbar, 0);
+
+  gtk_widget_add_events (GTK_WIDGET (self->sci), GDK_STRUCTURE_MASK);
+  plugin_signal_connect (geany_plugin,
+                         G_OBJECT (self->sci),
+                         "map-event",
+                         TRUE,
+                         G_CALLBACK (on_src_sci_map_event),
+                         self);
+
+  plugin_signal_connect (geany_plugin,
+                         G_OBJECT (self->sci),
+                         "sci-notify",
+                         TRUE,
+                         G_CALLBACK (on_src_sci_notify),
+                         self);
+
+  g_object_notify (G_OBJECT (self), "scintilla");
 }
 
 GdkCursorType
@@ -1275,7 +1283,7 @@ gboolean
 overview_scintilla_get_show_scrollbar (OverviewScintilla *self)
 {
   g_return_val_if_fail (OVERVIEW_IS_SCINTILLA (self), FALSE);
-  return sci_send (self->sci, GETVSCROLLBAR, 0, 0);
+  return self->show_scrollbar;
 }
 
 void
@@ -1286,10 +1294,10 @@ overview_scintilla_set_show_scrollbar (OverviewScintilla *self,
 
   g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
 
-  old_value = sci_send (self->sci, GETVSCROLLBAR, 0, 0);
-  if (show != old_value)
+  if (show != self->show_scrollbar)
     {
-      sci_send (self->sci, SETVSCROLLBAR, show, 0);
+      self->show_scrollbar = show;
+      sci_send (self->sci, SETVSCROLLBAR, self->show_scrollbar, 0);
       gtk_widget_queue_draw (GTK_WIDGET (self->sci));
       g_object_notify (G_OBJECT (self), "show-scrollbar");
     }

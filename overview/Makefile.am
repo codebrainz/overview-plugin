@@ -16,7 +16,9 @@ overview_la_SOURCES = \
 	overviewprefspanel.c \
 	overviewprefspanel.h \
 	overviewscintilla.c \
-	overviewscintilla.h
+	overviewscintilla.h \
+	overviewui.c \
+	overviewui.h
 
 overview_la_LDFLAGS = -module -avoid-version
 overview_la_LIBADD = $(GEANY_LIBS)

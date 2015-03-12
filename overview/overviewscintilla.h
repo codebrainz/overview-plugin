@@ -40,7 +40,7 @@ typedef struct OverviewScintillaClass_   OverviewScintillaClass;
 
 GType         overview_scintilla_get_type                  (void);
 GtkWidget    *overview_scintilla_new                       (ScintillaObject     *src_sci);
-void          overview_scintilla_queue_draw                (OverviewScintilla   *sci);
+void          overview_scintilla_sync                      (OverviewScintilla   *sci);
 GdkCursorType overview_scintilla_get_cursor                (OverviewScintilla   *sci);
 void          overview_scintilla_set_cursor                (OverviewScintilla   *sci,
                                                             GdkCursorType        cursor_type);

@@ -28,6 +28,7 @@
 #include "overviewscintilla.h"
 #include "overviewprefs.h"
 #include "overviewprefspanel.h"
+#include "overviewui.h"
 #include <errno.h>
 
 GeanyPlugin    *geany_plugin;
@@ -43,242 +44,8 @@ PLUGIN_SET_INFO (
   "Matthew Brush <matt@geany.org>")
 
 static OverviewPrefs   *overview_prefs     = NULL;
-static GtkWidget       *overview_menu_sep  = NULL;
-static GtkWidget       *overview_menu_item = NULL;
 
 static void write_config (void);
-
-static inline void
-container_add_expanded (GtkContainer *container,
-                        GtkWidget    *widget)
-{
-  gtk_container_add (container, widget);
-#if GTK_CHECK_VERSION (3, 0, 0)
-  g_object_set (widget, "expand", TRUE, NULL);
-#endif
-}
-
-static GtkWidget *
-hijack_scintilla (GeanyDocument  *doc,
-                  GtkPositionType pos)
-{
-  GtkWidget *sci    = GTK_WIDGET (doc->editor->sci);
-  GtkWidget *parent = gtk_widget_get_parent (sci);
-  GtkWidget *cont   = gtk_hbox_new (FALSE, 0);
-  GtkWidget *overview;
-
-  overview = overview_scintilla_new (SCINTILLA (sci));
-  overview_prefs_bind_scintilla (overview_prefs, G_OBJECT (overview));
-  gtk_widget_set_no_show_all (overview, TRUE);
-
-  if (pos == GTK_POS_LEFT &&
-      ! overview_geany_supports_left_position ())
-    {
-      g_critical ("Refusing to swap Overview into left position because "
-                  "your Geany version isn't new enough to support this "
-                  "without crashing hard.");
-      pos = GTK_POS_RIGHT;
-    }
-
-  gtk_container_remove (GTK_CONTAINER (parent), sci);
-  if (pos == GTK_POS_LEFT)
-    {
-      gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
-      gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
-    }
-  else
-    {
-      gtk_box_pack_start (GTK_BOX (cont), sci, TRUE, TRUE, 0);
-      gtk_box_pack_start (GTK_BOX (cont), overview, FALSE, TRUE, 0);
-    }
-  container_add_expanded (GTK_CONTAINER (parent), cont);
-
-  g_object_set_data (G_OBJECT (sci), "overview", overview);
-
-  gtk_widget_show_all (cont);
-
-  return overview;
-}
-
-static void
-hijack_all_scintillas (GtkPositionType pos)
-{
-  guint i = 0;
-  foreach_document (i)
-    hijack_scintilla (documents[i], pos);
-}
-
-static void
-restore_scintilla (GeanyDocument *doc)
-{
-  GtkWidget *sci    = GTK_WIDGET (doc->editor->sci);
-  GtkWidget *cont   = gtk_widget_get_parent (sci);
-  GtkWidget *parent = gtk_widget_get_parent (cont);
-
-  if (GTK_IS_WIDGET (sci))
-    {
-      g_object_ref (sci);
-      gtk_container_remove (GTK_CONTAINER (cont), sci);
-      gtk_container_remove (GTK_CONTAINER (parent), cont);
-      container_add_expanded (GTK_CONTAINER (parent), sci);
-      g_object_unref (sci);
-    }
-}
-
-static void
-restore_all_scintillas (void)
-{
-  guint i = 0;
-  foreach_document (i)
-    restore_scintilla (documents[i]);
-}
-
-static void
-on_document_open_new (G_GNUC_UNUSED GObject *unused,
-                      GeanyDocument         *doc,
-                      G_GNUC_UNUSED gpointer user_data)
-{
-  GtkPositionType pos = GTK_POS_RIGHT;
-  g_object_get (overview_prefs, "position", &pos, NULL);
-  hijack_scintilla (doc, pos);
-}
-
-static void
-on_document_activate (G_GNUC_UNUSED GObject *unused,
-                      GeanyDocument         *doc,
-                      G_GNUC_UNUSED gpointer user_data)
-{
-}
-
-static void
-on_document_reload (G_GNUC_UNUSED GObject *unused,
-                    GeanyDocument         *doc,
-                    G_GNUC_UNUSED gpointer user_data)
-{
-}
-
-static void
-on_document_close (G_GNUC_UNUSED GObject *unused,
-                   GeanyDocument         *doc,
-                   G_GNUC_UNUSED gpointer user_data)
-{
-  restore_scintilla (doc);
-}
-
-static gchar *
-get_config_file (void)
-{
-  gchar              *dir;
-  gchar              *fn;
-  static const gchar *def_config = OVERVIEW_PREFS_DEFAULT_CONFIG;
-
-  dir = g_build_filename (geany_data->app->configdir, "plugins", "overview", NULL);
-  fn = g_build_filename (dir, "prefs.conf", NULL);
-
-  if (! g_file_test (fn, G_FILE_TEST_IS_DIR))
-    {
-      if (g_mkdir_with_parents (dir, 0755) != 0)
-        {
-          g_critical ("failed to create config dir '%s': %s", dir, g_strerror (errno));
-          g_free (dir);
-          g_free (fn);
-          return NULL;
-        }
-    }
-
-  g_free (dir);
-
-  if (! g_file_test (fn, G_FILE_TEST_EXISTS))
-    {
-      GError *error = NULL;
-      if (!g_file_set_contents (fn, def_config, -1, &error))
-        {
-          g_critical ("failed to save default config to file '%s': %s",
-                      fn, error->message);
-          g_error_free (error);
-          g_free (fn);
-          return NULL;
-        }
-    }
-
-  return fn;
-}
-
-// FIXME: later on this and calls can be removed once Geany is released with
-// the patch needed to support putting overview on the left.
-gboolean
-overview_geany_supports_left_position (void)
-{
-  GeanyDocument *doc = document_get_current ();
-  return (DOC_VALID (doc) &&
-          (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") == doc));
-}
-
-static void
-swap_scintillas (GtkPositionType pos)
-{
-  guint        i;
-  gint         orig_page;
-  GtkNotebook *nb = GTK_NOTEBOOK (geany_data->main_widgets->notebook);
-
-  if (pos == GTK_POS_LEFT &&
-      ! overview_geany_supports_left_position ())
-    {
-      g_critical ("Refusing to swap Overview into left position because "
-                  "your Geany version isn't new enough to support this "
-                  "without crashing hard.");
-      pos = GTK_POS_RIGHT;
-    }
-
-  orig_page = gtk_notebook_get_current_page (nb);
-
-  foreach_document (i)
-    {
-      GeanyDocument     *doc = documents[i];
-      ScintillaObject   *sci;
-      OverviewScintilla *overview;
-      GtkWidget         *parent;
-      gint               this_page;
-
-      sci       = g_object_ref (doc->editor->sci);
-      overview  = g_object_ref (g_object_get_data (G_OBJECT (sci), "overview"));
-      parent    = gtk_widget_get_parent (GTK_WIDGET (sci));
-      this_page = document_get_notebook_page (doc);
-
-      gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (sci));
-      gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (overview));
-
-      if (pos == GTK_POS_LEFT)
-        {
-          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
-          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (sci), TRUE, TRUE, 0);
-        }
-      else
-        {
-          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (sci), TRUE, TRUE, 0);
-          gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
-        }
-
-      gtk_widget_show_all (parent);
-
-      g_object_unref (sci);
-      g_object_unref (overview);
-
-      gtk_notebook_set_current_page (nb, this_page);
-    }
-
-  gtk_notebook_set_current_page (nb, orig_page);
-}
-
-static void
-on_position_pref_notify (OverviewPrefs *prefs,
-                         GParamSpec    *pspec,
-                         gpointer       user_data)
-{
-  GtkPositionType pos = GTK_POS_RIGHT;
-  g_object_get (prefs, "position", &pos, NULL);
-  swap_scintillas (pos);
-}
 
 static void
 on_visible_pref_notify (OverviewPrefs *prefs,
@@ -333,124 +100,43 @@ on_kb_activate (guint keybinding_id)
   return TRUE;
 }
 
-static gint
-get_menu_item_pos (GtkWidget *menu,
-                   GtkWidget *item_before)
+static gchar *
+get_config_file (void)
 {
-  GList *children;
-  gint   pos = 0;
-  children = gtk_container_get_children (GTK_CONTAINER (menu));
-  for (GList *iter = children; iter != NULL; iter = g_list_next (iter), pos++)
-    {
-      if (iter->data == item_before)
-        break;
-    }
-  g_list_free (children);
-  return pos + 1;
-}
+  gchar              *dir;
+  gchar              *fn;
+  static const gchar *def_config = OVERVIEW_PREFS_DEFAULT_CONFIG;
 
-static GtkWidget *
-add_menu_item (void)
-{
-  static const gchar *view_menu_name = "menu_view1_menu";
-  static const gchar *prev_item_name = "menu_show_sidebar1";
-  GtkWidget          *main_window = geany_data->main_widgets->window;
-  GtkWidget          *view_menu;
-  GtkWidget          *prev_item;
-  gint                item_pos;
+  dir = g_build_filename (geany_data->app->configdir, "plugins", "overview", NULL);
+  fn = g_build_filename (dir, "prefs.conf", NULL);
 
-  view_menu = ui_lookup_widget (main_window, view_menu_name);
-  if (! GTK_IS_MENU (view_menu))
+  if (! g_file_test (fn, G_FILE_TEST_IS_DIR))
     {
-      g_critical ("failed to locate the View menu (%s) in Geany's main menu",
-                  view_menu_name);
-      return NULL;
+      if (g_mkdir_with_parents (dir, 0755) != 0)
+        {
+          g_critical ("failed to create config dir '%s': %s", dir, g_strerror (errno));
+          g_free (dir);
+          g_free (fn);
+          return NULL;
+        }
     }
 
-  overview_menu_item = gtk_check_menu_item_new_with_label (_("Show Overview"));
-  prev_item = ui_lookup_widget (main_window, prev_item_name);
-  if (! GTK_IS_MENU_ITEM (prev_item))
+  g_free (dir);
+
+  if (! g_file_test (fn, G_FILE_TEST_EXISTS))
     {
-      g_critical ("failed to locate the Show Sidebar menu item (%s) in Geany's UI",
-                  prev_item_name);
-      overview_menu_sep = gtk_separator_menu_item_new ();
-      gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), overview_menu_sep);
-      gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), overview_menu_item);
-      gtk_widget_show (overview_menu_sep);
-    }
-  else
-    {
-      item_pos = get_menu_item_pos (view_menu, prev_item);
-      overview_menu_sep = NULL;
-      gtk_menu_shell_insert (GTK_MENU_SHELL (view_menu), overview_menu_item, item_pos);
+      GError *error = NULL;
+      if (!g_file_set_contents (fn, def_config, -1, &error))
+        {
+          g_critical ("failed to save default config to file '%s': %s",
+                      fn, error->message);
+          g_error_free (error);
+          g_free (fn);
+          return NULL;
+        }
     }
 
-  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (overview_menu_item), TRUE);
-  gtk_widget_show (overview_menu_item);
-
-  return overview_menu_item;
-}
-
-void
-plugin_init (G_GNUC_UNUSED GeanyData *data)
-{
-  gchar          *conf_file;
-  GError         *error = NULL;
-  GeanyKeyGroup  *key_group;
-  GtkPositionType pos = GTK_POS_RIGHT;
-  GtkWidget      *menu_item;
-  gboolean        visible = TRUE;
-
-  plugin_module_make_resident (geany_plugin);
-  menu_item = add_menu_item ();
-
-  key_group = plugin_set_key_group (geany_plugin,
-                                    "overview",
-                                    NUM_KB,
-                                    on_kb_activate);
-
-  keybindings_set_item (key_group,
-                        KB_TOGGLE_VISIBLE,
-                        NULL, 0, 0,
-                        "toggle-visibility",
-                        "Toggle Visibility",
-                        menu_item);
-
-  keybindings_set_item (key_group,
-                        KB_TOGGLE_POSITION,
-                        NULL, 0, 0,
-                        "toggle-position",
-                        "Toggle Left/Right Position",
-                        NULL);
-
-  keybindings_set_item (key_group,
-                        KB_TOGGLE_INVERTED,
-                        NULL, 0, 0,
-                        "toggle-inverted",
-                        "Toggle Overlay Inversion",
-                        NULL);
-
-  overview_prefs = overview_prefs_new ();
-  conf_file = get_config_file ();
-  if (! overview_prefs_load (overview_prefs, conf_file, &error))
-    {
-      g_critical ("failed to load preferences file '%s': %s", conf_file, error->message);
-      g_error_free (error);
-    }
-  g_free (conf_file);
-
-  g_object_get (G_OBJECT (overview_prefs), "position", &pos, NULL);
-  hijack_all_scintillas (pos);
-  g_signal_connect (overview_prefs, "notify::position", G_CALLBACK (on_position_pref_notify), NULL);
-  g_signal_connect (overview_prefs, "notify::visible", G_CALLBACK (on_visible_pref_notify), NULL);
-  g_object_get (overview_prefs, "visible", &visible, NULL);
-  gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), visible);
-  g_object_bind_property (menu_item, "active", overview_prefs, "visible", G_BINDING_DEFAULT);
-
-  plugin_signal_connect (geany_plugin, NULL, "document-new", TRUE, G_CALLBACK (on_document_open_new), NULL);
-  plugin_signal_connect (geany_plugin, NULL, "document-open", TRUE, G_CALLBACK (on_document_open_new), NULL);
-  plugin_signal_connect (geany_plugin, NULL, "document-activate", TRUE, G_CALLBACK (on_document_activate), NULL);
-  plugin_signal_connect (geany_plugin, NULL, "document-reload", TRUE, G_CALLBACK (on_document_reload), NULL);
+  return fn;
 }
 
 static void
@@ -468,20 +154,80 @@ write_config (void)
 }
 
 void
+plugin_init (G_GNUC_UNUSED GeanyData *data)
+{
+  gchar          *conf_file;
+  GError         *error = NULL;
+  GeanyKeyGroup  *key_group;
+
+  plugin_module_make_resident (geany_plugin);
+
+  overview_prefs = overview_prefs_new ();
+  conf_file = get_config_file ();
+  if (! overview_prefs_load (overview_prefs, conf_file, &error))
+    {
+      g_critical ("failed to load preferences file '%s': %s", conf_file, error->message);
+      g_error_free (error);
+    }
+  g_free (conf_file);
+
+  overview_ui_init (overview_prefs);
+
+  key_group = plugin_set_key_group (geany_plugin,
+                                    "overview",
+                                    NUM_KB,
+                                    on_kb_activate);
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_VISIBLE,
+                        NULL, 0, 0,
+                        "toggle-visibility",
+                        "Toggle Visibility",
+                        overview_ui_get_menu_item ());
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_POSITION,
+                        NULL, 0, 0,
+                        "toggle-position",
+                        "Toggle Left/Right Position",
+                        NULL);
+
+  keybindings_set_item (key_group,
+                        KB_TOGGLE_INVERTED,
+                        NULL, 0, 0,
+                        "toggle-inverted",
+                        "Toggle Overlay Inversion",
+                        NULL);
+
+  g_signal_connect (overview_prefs, "notify::visible", G_CALLBACK (on_visible_pref_notify), NULL);
+}
+
+void
 plugin_cleanup (void)
 {
   write_config ();
-  restore_all_scintillas ();
-
-  if (GTK_IS_WIDGET (overview_menu_sep))
-    gtk_widget_destroy (overview_menu_sep);
-  gtk_widget_destroy (overview_menu_item);
-  overview_menu_sep = NULL;
-  overview_menu_item = NULL;
+  overview_ui_deinit ();
 
   if (OVERVIEW_IS_PREFS (overview_prefs))
     g_object_unref (overview_prefs);
   overview_prefs = NULL;
+}
+
+static gboolean
+on_update_overview_later (gpointer user_data)
+{
+  GeanyDocument *doc;
+  doc = document_get_current ();
+  if (DOC_VALID (doc))
+    {
+      OverviewScintilla *overview;
+      overview = g_object_get_data (G_OBJECT (doc->editor->sci), "overview");
+      if (OVERVIEW_IS_SCINTILLA (overview))
+        overview_scintilla_sync (overview);
+    }
+  else
+    g_warning ("invalid document!");
+  return FALSE;
 }
 
 static void
@@ -490,6 +236,10 @@ on_prefs_stored (OverviewPrefsPanel *panel,
                  gpointer            user_data)
 {
   write_config ();
+
+  // it won't get updated if we don't sync it on idle
+  // TODO: figure out why
+  g_idle_add_full (G_PRIORITY_LOW, on_update_overview_later, NULL, NULL);
 }
 
 GtkWidget *
