@@ -67,6 +67,15 @@ hijack_scintilla (GeanyDocument  *doc,
   overview_prefs_bind_scintilla (overview_prefs, G_OBJECT (overview));
   gtk_widget_set_no_show_all (overview, TRUE);
 
+  if (pos == GTK_POS_LEFT &&
+      ! overview_geany_supports_left_position ())
+    {
+      g_critical ("Refusing to swap Overview into left position because "
+                  "your Geany version isn't new enough to support this "
+                  "without crashing hard.");
+      pos = GTK_POS_RIGHT;
+    }
+
   gtk_container_remove (GTK_CONTAINER (parent), sci);
   if (pos == GTK_POS_LEFT)
     {
@@ -191,6 +200,16 @@ get_config_file (void)
   return fn;
 }
 
+// FIXME: later on this and calls can be removed once Geany is released with
+// the patch needed to support putting overview on the left.
+gboolean
+overview_geany_supports_left_position (void)
+{
+  GeanyDocument *doc = document_get_current ();
+  return (DOC_VALID (doc) &&
+          (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") == doc));
+}
+
 static void
 swap_scintillas (GtkPositionType pos)
 {
@@ -198,18 +217,14 @@ swap_scintillas (GtkPositionType pos)
   gint         orig_page;
   GtkNotebook *nb = GTK_NOTEBOOK (geany_data->main_widgets->notebook);
 
-  // DELETE ME: special check to disable swapping if the needed patch isn't applied to Geany
-  {
-    GeanyDocument *doc = document_get_current ();
-    if (DOC_VALID (doc) &&
-        (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") != doc))
-      {
-        g_critical ("Refusing to swap Overview into left position because "
-                    "your Geany version isn't new enough to support this "
-                    "without crashing hard.");
-        pos = GTK_POS_RIGHT;
-      }
-  }
+  if (pos == GTK_POS_LEFT &&
+      ! overview_geany_supports_left_position ())
+    {
+      g_critical ("Refusing to swap Overview into left position because "
+                  "your Geany version isn't new enough to support this "
+                  "without crashing hard.");
+      pos = GTK_POS_RIGHT;
+    }
 
   orig_page = gtk_notebook_get_current_page (nb);
 

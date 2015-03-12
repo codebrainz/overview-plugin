@@ -22,6 +22,7 @@
 
 #include "overviewprefspanel.h"
 #include "overviewcolor.h"
+#include "overviewplugin.h"
 
 struct OverviewPrefsPanel_
 {
@@ -221,6 +222,12 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   gtk_widget_show_all (self->prefs_table);
   gtk_container_add (GTK_CONTAINER (self), self->prefs_table);
   g_object_unref (builder);
+
+  if (! overview_geany_supports_left_position ())
+    {
+      gtk_widget_set_no_show_all (self->pos_left_check, TRUE);
+      gtk_widget_hide (self->pos_left_check);
+    }
 }
 
 static void

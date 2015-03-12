@@ -31,4 +31,6 @@ extern GeanyData      *geany_data;
 extern GeanyPlugin    *geany_plugin;
 extern GeanyFunctions *geany_functions;
 
+gboolean overview_geany_supports_left_position (void);
+
 #endif // OVERVIEW_PLUGIN_H
