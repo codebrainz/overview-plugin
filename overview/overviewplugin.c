@@ -38,7 +38,7 @@ PLUGIN_VERSION_CHECK (211)
 
 PLUGIN_SET_INFO (
   "Overview",
-  "Provides an overview of the active document",
+  _("Provides an overview of the active document"),
   "0.01",
   "Matthew Brush <matt@geany.org>")
 
@@ -367,7 +367,7 @@ add_menu_item (void)
       return NULL;
     }
 
-  overview_menu_item = gtk_check_menu_item_new_with_label ("Show Overview");
+  overview_menu_item = gtk_check_menu_item_new_with_label (_("Show Overview"));
   prev_item = ui_lookup_widget (main_window, prev_item_name);
   if (! GTK_IS_MENU_ITEM (prev_item))
     {

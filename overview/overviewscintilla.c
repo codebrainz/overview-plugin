@@ -509,8 +509,9 @@ overview_scintilla_setup_tooltip (OverviewScintilla *self,
     {
       gint line = sci_send (self, LINEFROMPOSITION, pos, 0);
       gint column = sci_send (self, GETCOLUMN, pos, 0);
-      gchar *text = g_strdup_printf ("Line <b>%d</b>, Column <b>%d</b>, Position <b>%d</b>",
-                                     line, column, pos);
+      gchar *text =
+        g_strdup_printf (_("Line <b>%d</b>, Column <b>%d</b>, Position <b>%d</b>"),
+                         line, column, pos);
       gtk_tooltip_set_markup (tooltip, text);
       g_free (text);
     }
