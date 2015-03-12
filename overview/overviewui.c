@@ -140,6 +140,7 @@ overview_ui_restore_editor_view (ScintillaObject   *src_sci,
   GtkWidget *old_parent = gtk_widget_get_parent (GTK_WIDGET (src_sci));
   GtkWidget *new_parent = gtk_widget_get_parent (old_parent);
   g_object_ref (src_sci);
+  g_object_set_data (G_OBJECT (src_sci), "overview", NULL);
   gtk_container_remove (GTK_CONTAINER (old_parent), GTK_WIDGET (src_sci));
   gtk_container_remove (GTK_CONTAINER (new_parent), old_parent);
   overview_ui_container_add_expanded (GTK_CONTAINER (new_parent), GTK_WIDGET (src_sci));
@@ -334,6 +335,7 @@ overview_ui_init (OverviewPrefs *prefs)
   overview_ui_prefs = g_object_ref (prefs);
 
   overview_ui_add_menu_item ();
+  overview_ui_hijack_all_editor_views ();
 
   g_signal_connect (prefs, "notify::position",
                     G_CALLBACK (on_position_pref_notify), NULL);
