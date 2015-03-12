@@ -201,6 +201,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
+                    <property name="tooltip_text" translatable="yes">Turn off drawing overlay, which shows the region of the main editor view that is currently in view, ontop of the overview bar.</property>
                     <property name="draw_indicator">True</property>
                   </object>
                   <packing>
@@ -321,6 +322,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
+                    <property name="tooltip_text" translatable="yes">When checked it will draw the overlay ontop of the area that is visible in the main editor view, when unckecked, it will do the opposite and draw the overlay everywhere but the visible area, "revealing" the visible part.</property>
                     <property name="active">True</property>
                     <property name="draw_indicator">True</property>
                   </object>
