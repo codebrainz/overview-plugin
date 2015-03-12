@@ -213,33 +213,13 @@ plugin_cleanup (void)
   overview_prefs = NULL;
 }
 
-static gboolean
-on_update_overview_later (gpointer user_data)
-{
-  GeanyDocument *doc;
-  doc = document_get_current ();
-  if (DOC_VALID (doc))
-    {
-      OverviewScintilla *overview;
-      overview = g_object_get_data (G_OBJECT (doc->editor->sci), "overview");
-      if (OVERVIEW_IS_SCINTILLA (overview))
-        overview_scintilla_sync (overview);
-    }
-  else
-    g_warning ("invalid document!");
-  return FALSE;
-}
-
 static void
 on_prefs_stored (OverviewPrefsPanel *panel,
                  OverviewPrefs      *prefs,
                  gpointer            user_data)
 {
   write_config ();
-
-  // it won't get updated if we don't sync it on idle
-  // TODO: figure out why
-  g_idle_add_full (G_PRIORITY_LOW, on_update_overview_later, NULL, NULL);
+  overview_ui_queue_update ();
 }
 
 GtkWidget *

@@ -237,6 +237,7 @@ on_document_open_new (G_GNUC_UNUSED GObject *unused,
 {
   g_object_set_data (G_OBJECT (doc->editor->sci), "overview-document", doc);
   overview_ui_hijack_editor_view (doc->editor->sci, NULL);
+  overview_ui_queue_update ();
 }
 
 static void
@@ -246,7 +247,7 @@ on_document_activate_reload (G_GNUC_UNUSED GObject *unused,
 {
   OverviewScintilla *overview;
   overview = overview_scintilla_from_document (doc);
-  overview_scintilla_sync (overview);
+  overview_ui_queue_update ();
 }
 
 static void
@@ -348,7 +349,6 @@ overview_ui_init (OverviewPrefs *prefs)
 
 }
 
-
 void
 overview_ui_deinit (void)
 {
@@ -361,4 +361,25 @@ overview_ui_deinit (void)
   if (OVERVIEW_IS_PREFS (overview_ui_prefs))
     g_object_unref (overview_ui_prefs);
   overview_ui_prefs = NULL;
+}
+
+static gboolean
+on_update_overview_later (gpointer user_data)
+{
+  GeanyDocument *doc;
+  doc = document_get_current ();
+  if (DOC_VALID (doc))
+    {
+      OverviewScintilla *overview;
+      overview = g_object_get_data (G_OBJECT (doc->editor->sci), "overview");
+      if (OVERVIEW_IS_SCINTILLA (overview))
+        overview_scintilla_sync (overview);
+    }
+  return FALSE;
+}
+
+void
+overview_ui_queue_update (void)
+{
+  g_idle_add_full (G_PRIORITY_LOW, on_update_overview_later, NULL, NULL);
 }

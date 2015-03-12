@@ -30,5 +30,6 @@ void       overview_ui_init                     (OverviewPrefs *prefs);
 void       overview_ui_deinit                   (void);
 GtkWidget *overview_ui_get_menu_item            (void);
 gboolean   overview_ui_supports_left_position   (void);
+void       overview_ui_queue_update             (void);
 
 #endif // OVERVIEWUI_H_
