@@ -3,3 +3,6 @@ TODO:
     - configurable cursor for normal and scrolling
     - apply `geanyscihunting.patch` to Geany, it's needed to support putting
       the overview scintilla on the left.
+        See: https://github.com/geany/geany/pull/442
+    - update the overview when the main editor view changes colour schemes
+      and fonts and such.
