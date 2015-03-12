@@ -20,6 +20,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "overviewprefs.h"
 #include "overviewcolor.h"
 #include "overviewscintilla.h"
