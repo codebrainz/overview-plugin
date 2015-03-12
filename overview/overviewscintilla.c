@@ -35,6 +35,10 @@
 #define OVERVIEW_SCINTILLA_WIDTH_DEF     120
 #define OVERVIEW_SCINTILLA_SCROLL_LINES  1
 
+#ifndef SC_MAX_MARGIN
+# define SC_MAX_MARGIN 4
+#endif
+
 #define sci_send(sci, msg, wParam, lParam) \
   scintilla_send_message (SCINTILLA (sci), SCI_##msg, (uptr_t)(wParam), (sptr_t)(lParam))
 
