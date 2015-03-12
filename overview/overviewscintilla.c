@@ -835,11 +835,8 @@ sci_get_font (ScintillaObject *sci,
 {
   gsize  len   = sci_send (sci, STYLEGETFONT, style, 0);
   gchar *name  = g_malloc0 (len + 1);
-  gchar *pname = NULL;
   sci_send (sci, STYLEGETFONT, style, name);
-  pname = g_strdup_printf ("!%s", name);
-  g_free (name);
-  return pname;
+  return name;
 }
 
 static gboolean
