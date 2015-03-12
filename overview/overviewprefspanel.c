@@ -179,7 +179,7 @@ overview_prefs_panel_load_prefs (OverviewPrefsPanel *self)
                 "position", &pos,
                 "overlay-enabled", &ovl_en,
                 "overlay-inverted", &ovl_inv,
-                "overaly-color", &ovl_clr,
+                "overlay-color", &ovl_clr,
                 "overlay-outline-color", &out_clr,
                 NULL);
 
