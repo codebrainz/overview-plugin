@@ -213,7 +213,6 @@ gboolean
 overview_ui_supports_left_position (void)
 {
   GeanyDocument *doc = document_get_current ();
-  g_assert (DOC_VALID (doc));
   return (DOC_VALID (doc) &&
     (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") == doc));
 }
