@@ -228,11 +228,10 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   gtk_container_add (GTK_CONTAINER (self), self->prefs_table);
   g_object_unref (builder);
 
-  if (! overview_ui_supports_left_position ())
-    {
-      gtk_widget_set_no_show_all (self->pos_left_check, TRUE);
-      gtk_widget_hide (self->pos_left_check);
-    }
+#ifndef OVERVIEW_UI_SUPPORTS_LEFT_POSITION
+  gtk_widget_set_no_show_all (self->pos_left_check, TRUE);
+  gtk_widget_hide (self->pos_left_check);
+#endif
 }
 
 static void

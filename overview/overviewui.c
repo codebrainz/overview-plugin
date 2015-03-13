@@ -98,14 +98,15 @@ overview_ui_hijack_editor_view (ScintillaObject   *src_sci,
   g_object_set_data (G_OBJECT (src_sci), "overview", overview);
 
   on_left = overview_ui_position_is_left ();
-  if (on_left &&
-      (g_object_get_data (G_OBJECT (src_sci), "geany-document") == NULL))
+#ifndef OVERVIEW_UI_SUPPORTS_LEFT_POSITION
+  if (on_left)
     {
       g_critical ("Refusing to add Overview into left position because "
                   "your Geany version isn't new enough to support this "
                   "without crashing hard.");
       on_left = FALSE;
     }
+#endif
 
   g_object_ref (src_sci);
   gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (src_sci));
@@ -158,16 +159,18 @@ overview_ui_update_editor_view (ScintillaObject   *src_sci,
                                 OverviewScintilla *overview)
 {
   GtkWidget         *parent;
-  gboolean           is_left;
+  gboolean           on_left;
 
-  is_left = overview_ui_position_is_left ();
-  if (is_left && ! overview_ui_supports_left_position ())
+  on_left = overview_ui_position_is_left ();
+#ifndef OVERVIEW_UI_SUPPORTS_LEFT_POSITION
+  if (on_left)
     {
       g_critical ("Refusing to swap Overview into left position because "
                   "your Geany version isn't new enough to support this "
                   "without crashing hard.");
-      is_left = FALSE;
+      on_left = FALSE;
     }
+#endif
 
   parent = gtk_widget_get_parent (GTK_WIDGET (src_sci));
 
@@ -177,7 +180,7 @@ overview_ui_update_editor_view (ScintillaObject   *src_sci,
   gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (src_sci));
   gtk_container_remove (GTK_CONTAINER (parent), GTK_WIDGET (overview));
 
-  if (is_left)
+  if (on_left)
     {
       gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (overview), FALSE, TRUE, 0);
       gtk_box_pack_start (GTK_BOX (parent), GTK_WIDGET (src_sci), TRUE, TRUE, 0);
@@ -207,14 +210,6 @@ overview_ui_get_menu_item (void)
 {
   g_return_val_if_fail (GTK_IS_MENU_ITEM (overview_ui_menu_item), NULL);
   return overview_ui_menu_item;
-}
-
-gboolean
-overview_ui_supports_left_position (void)
-{
-  GeanyDocument *doc = document_get_current ();
-  return (DOC_VALID (doc) &&
-    (g_object_get_data (G_OBJECT (doc->editor->sci), "geany-document") == doc));
 }
 
 static inline OverviewScintilla *

@@ -24,12 +24,19 @@
 #define OVERVIEWUI_H_
 
 #include "overviewprefs.h"
-#include <gtk/gtk.h>
+#include "overviewplugin.h"
+
+// This should match the API version of when the patch gets applied to
+// make putting overview on left work.
+#define OVERVIEW_SCI_HUNTING_PATCH_API 224
+
+#if GEANY_API_VERSION >= OVERVIEW_SCI_HUNTING_PATCH_API
+# define OVERVIEW_UI_SUPPORTS_LEFT_POSITION 1
+#endif
 
 void       overview_ui_init                     (OverviewPrefs *prefs);
 void       overview_ui_deinit                   (void);
 GtkWidget *overview_ui_get_menu_item            (void);
-gboolean   overview_ui_supports_left_position   (void);
 void       overview_ui_queue_update             (void);
 
 #endif // OVERVIEWUI_H_
