@@ -49,7 +49,7 @@ Once you have all the dependencies, it's just a matter of running the
 following commands:
 
 ```bash
-$ ./autogen.sh   # note 0
+$ ./autogen.sh   # note 1
 $ ./configure    # note 2
 $ make
 $ make install   # note 3
