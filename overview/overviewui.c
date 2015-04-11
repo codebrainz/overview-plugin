@@ -84,7 +84,6 @@ overview_ui_hijack_editor_view (ScintillaObject   *src_sci,
   GtkWidget     *container;
   GtkWidget     *overview;
   gboolean       on_left;
-  GeanyDocument *doc;
 
   g_assert (g_object_get_data (G_OBJECT (src_sci), "overview") == NULL);
 
@@ -235,12 +234,10 @@ on_document_open_new (G_GNUC_UNUSED GObject *unused,
 }
 
 static void
-on_document_activate_reload (G_GNUC_UNUSED GObject *unused,
-                             GeanyDocument         *doc,
-                             G_GNUC_UNUSED gpointer user_data)
+on_document_activate_reload (G_GNUC_UNUSED GObject       *unused,
+                             G_GNUC_UNUSED GeanyDocument *doc,
+                             G_GNUC_UNUSED gpointer       user_data)
 {
-  OverviewScintilla *overview;
-  overview = overview_scintilla_from_document (doc);
   overview_ui_queue_update ();
 }
 

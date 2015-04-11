@@ -115,12 +115,7 @@ overview_prefs_class_init (OverviewPrefsClass *klass)
 static void
 overview_prefs_finalize (GObject *object)
 {
-  OverviewPrefs *self;
-
   g_return_if_fail (OVERVIEW_IS_PREFS (object));
-
-  self = OVERVIEW_PREFS (object);
-
   G_OBJECT_CLASS (overview_prefs_parent_class)->finalize (object);
 }
 

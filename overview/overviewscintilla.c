@@ -591,7 +591,7 @@ overview_scintilla_update_rect (OverviewScintilla *self)
 {
   GtkAllocation alloc;
   GdkRectangle  rect;
-  gint          first_line, n_lines, last_line, line_height;
+  gint          first_line, n_lines, last_line;
   gint          pos_start, pos_end;
   gint          ystart, yend;
 
@@ -1287,8 +1287,6 @@ void
 overview_scintilla_set_show_scrollbar (OverviewScintilla *self,
                                        gboolean           show)
 {
-  gboolean old_value;
-
   g_return_if_fail (OVERVIEW_IS_SCINTILLA (self));
 
   if (show != self->show_scrollbar)
