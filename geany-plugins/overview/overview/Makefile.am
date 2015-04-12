@@ -20,8 +20,7 @@ overview_la_SOURCES = \
 
 overview_la_CFLAGS = \
 	$(AM_CFLAGS) \
-	$(OVERVIEW_CFLAGS) \
-	-I$(top_srcdir)/overview \
+	-I$(srcdir)/.. \
 	-DOVERVIEW_PREFS_UI_FILE=\""$(pkgdatadir)/overview/prefs.ui"\"
 
 overview_la_LIBADD = \
