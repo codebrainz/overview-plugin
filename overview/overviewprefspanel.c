@@ -200,6 +200,7 @@ overview_prefs_panel_init (OverviewPrefsPanel *self)
   GtkWidget  *overlay_frame;
 
   builder = gtk_builder_new ();
+  gtk_builder_set_translation_domain (builder, GETTEXT_PACKAGE);
   if (! gtk_builder_add_from_file (builder, OVERVIEW_PREFS_UI_FILE, &error))
     {
       g_critical ("failed to open UI file '%s': %s", OVERVIEW_PREFS_UI_FILE, error->message);
